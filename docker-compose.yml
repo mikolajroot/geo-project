@@ -1,0 +1,43 @@
+name: geo-project
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    networks:
+      - db-net
+    env_file: .env
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/pgdata
+    volumes:
+      - geo_postgres_data:/var/lib/postgresql
+    ports:
+      - "5435:5432"
+    secrets:
+      - db_password
+      - db_user
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user) -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+    geo_postgres_data:
+
+networks:
+  db-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  db_user:
+    file: ./secrets/db_user.txt
