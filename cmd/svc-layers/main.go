@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	"geo-project/pkg/database"
-	"geo-project/internal/catalog/routes" 
+	"geo-project/internal/layers/routes" 
 )
 
 func main() {
@@ -48,9 +48,9 @@ func main() {
 	})
 
 
-	api := e.Group("/api/v1")
+	api := e.Group("/api/v1/layers")
 
-	routes.RegisterLayerRoutes(api, goquDB) 
+	routes.RegisterLayersRoutes(api, goquDB) 
 
 	port := os.Getenv("PORT")
 	if port == "" {
