@@ -12,7 +12,7 @@
 ├── internal/                   # Kod prywatny poszczególnych mikroserwisów
 │   ├── gateway/                # Logika routingu i kompensacji (Saga)
 │   ├── analytics/              # Logika domenowa serwisu T1
-│   ├── catalog/                # Logika domenowa serwisu T2
+│   ├── layers/                # Logika domenowa serwisu T2
 │   ├── features/               # Logika domenowa serwisu T3
 │   ├── auth/                   # Logika domenowa serwisu T4
 │   ├── ingest/                 # Logika domenowa serwisu T5

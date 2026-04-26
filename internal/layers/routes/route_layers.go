@@ -2,7 +2,7 @@ package routes
 
 import (
 	"geo-project/controllers"
-	"geo-project/services"
+	"geo-project/service"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/labstack/echo/v5"
