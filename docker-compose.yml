@@ -40,6 +40,7 @@ services:
       - DB_PORT=5432
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
     secrets:
       - db_user
       - db_password

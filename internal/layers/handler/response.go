@@ -15,7 +15,7 @@ type LayerResponse struct {
 
 type PaginationResponse struct {
 	TotalPages  int  `json:"total_pages"`
-	PageSize 	int  `json:"page_size"`
+	Page 	int  `json:"page"`
 }
 
 type okResponse[T any] struct {

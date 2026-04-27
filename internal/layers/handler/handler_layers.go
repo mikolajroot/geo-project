@@ -51,9 +51,13 @@ func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 		})
 	}
 
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+
 	response.Meta = PaginationResponse{
 		TotalPages: totalPages,
-		PageSize: req.Page,
+		Page: req.Page,
 	}
 
 	return c.JSON(http.StatusOK, response)

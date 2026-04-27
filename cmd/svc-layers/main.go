@@ -12,12 +12,20 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"github.com/go-playground/validator/v10"
 
 	"geo-project/pkg/database"
 	"geo-project/internal/layers/routes"
 	"geo-project/pkg/errors"
 )
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i any) error {
+	return cv.validator.Struct(i)
+}
 func main() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Println("Warning: .env file not found. Relying on system environment variables.")
@@ -37,9 +45,10 @@ func main() {
 
 	e.HTTPErrorHandler = errors.CustomHTTPErrorHandler
 
+	e.Validator = &CustomValidator{validator: validator.New()}
+
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORS("http://localhost:3000"))
 
 	e.GET("/health", func(c *echo.Context) error {
 		var result int
