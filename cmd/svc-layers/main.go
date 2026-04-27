@@ -51,7 +51,7 @@ func main() {
 	})
 
 
-	api := e.Group("/api/v1/layers")
+	api := e.Group("/api/v1")
 
 	routes.RegisterLayersRoutes(api, goquDB) 
 

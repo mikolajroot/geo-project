@@ -24,6 +24,29 @@ services:
       timeout: 5s
       retries: 5
 
+  svc-layers:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: svc-layers
+    networks:
+      - app-net
+      - db-net
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+    secrets:
+      - db_user
+      - db_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
     geo_postgres_data:
 
@@ -35,6 +58,13 @@ networks:
       config:
         - subnet: 192.168.1.0/24
           gateway: 192.168.1.1
+  app-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.2.0/24
+          gateway: 192.168.2.1
 
 secrets:
   db_password:

@@ -28,9 +28,18 @@ func BuildDSN() string {
 	port := os.Getenv("DB_PORT")
 	dbName := os.Getenv("POSTGRES_DB")
 
-	user := readSecret("run/secrets/db_user")
-	pass := readSecret("run/secrets/db_password")
+	userFile := os.Getenv("DB_USER_FILE")
+	passFile := os.Getenv("DB_PASSWORD_FILE")
 
+	if userFile == "" {
+		userFile = "/run/secrets/db_user" 
+	}
+	if passFile == "" {
+		passFile = "/run/secrets/db_password"
+	}
+
+	user := readSecret(userFile)
+	pass := readSecret(passFile)
 
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user, pass, host, port, dbName)

@@ -12,7 +12,7 @@ MIGRATE := migrate
 MIGRATIONS_DIR := db/migrations
 
 up:
-	docker compose up -d
+	docker compose up -d --build
 
 down:
 	docker compose down
