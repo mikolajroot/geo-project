@@ -71,7 +71,7 @@ func validationInvalidParams(err error) []invalidParam {
 }
 
 
-func CustomHTTPErrorHandler(err error, c *echo.Context) {
+func CustomHTTPErrorHandler(c *echo.Context,err error) {
 	if err == nil {
 		return
 	}

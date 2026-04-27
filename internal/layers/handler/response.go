@@ -12,3 +12,13 @@ type LayerResponse struct {
 	CreatedAt    time.Time `json:"created_at"`
     UpdatedAt    time.Time `json:"updated_at"`
 }
+
+type PaginationResponse struct {
+	TotalPages  int  `json:"total_pages"`
+	PageSize 	int  `json:"page_size"`
+}
+
+type okResponse[T any] struct {
+	Data  	[]T
+	Meta	PaginationResponse
+}

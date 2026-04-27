@@ -14,7 +14,8 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	"geo-project/pkg/database"
-	"geo-project/internal/layers/routes" 
+	"geo-project/internal/layers/routes"
+	"geo-project/pkg/errors"
 )
 
 func main() {
@@ -33,6 +34,8 @@ func main() {
 	log.Println("Goqu Query Builder initialized successfully")
 
 	e := echo.New()
+
+	e.HTTPErrorHandler = errors.CustomHTTPErrorHandler
 
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())

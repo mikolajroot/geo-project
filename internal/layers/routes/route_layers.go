@@ -1,18 +1,21 @@
 package routes
 
 import (
-	"geo-project/controllers"
-	"geo-project/service"
+	"geo-project/internal/layers/handler"
+	"geo-project/internal/layers/service"
+	"geo-project/internal/layers/repository"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/labstack/echo/v5"
 )
 
-func RegisterLayersRoutes(api *echo.Group, queries *goqu.Database) {
+func RegisterLayersRoutes(api *echo.Group, goquDB *goqu.Database) {
 
-	heroService := services.NewHeroesService(queries)
-	heroController := controllers.NewHeroesController(heroService)
+	layerRepo := repositories.NewLayerRepository(goquDB)
+	layerService := service.NewLayerService(layerRepo)
 
-	api.GET("/heroes", heroController.GetHeroesByStatusAndPower)
+	layerHandler := handler.NewLayerHandler(layerService)
+
+	api.GET("/layers", layerHandler.HandleGetLayers)
 
 }
