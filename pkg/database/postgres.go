@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 	"strings"
-
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
-
 
 func readSecret(filepath string) string {
 	data, err := os.ReadFile(filepath)
@@ -22,7 +20,6 @@ func readSecret(filepath string) string {
 	return strings.TrimSpace(string(data))
 }
 
-
 func BuildDSN() string {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
@@ -32,7 +29,7 @@ func BuildDSN() string {
 	passFile := os.Getenv("DB_PASSWORD_FILE")
 
 	if userFile == "" {
-		userFile = "/run/secrets/db_user" 
+		userFile = "/run/secrets/db_user"
 	}
 	if passFile == "" {
 		passFile = "/run/secrets/db_password"
@@ -45,7 +42,6 @@ func BuildDSN() string {
 		user, pass, host, port, dbName)
 }
 
-
 func NewStandardDB() (*sql.DB, error) {
 	dsn := BuildDSN()
 
@@ -56,7 +52,7 @@ func NewStandardDB() (*sql.DB, error) {
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute) 
+	db.SetConnMaxLifetime(5 * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("Error ping: %w", err)

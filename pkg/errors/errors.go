@@ -10,18 +10,16 @@ import (
 )
 
 var httpStatusByCode = map[string]int{
-	"NOT_FOUND":             http.StatusNotFound,
-	"CONFLICT":              http.StatusConflict,
-	"VALIDATION_ERROR":      http.StatusUnprocessableEntity,
-	"FORBIDDEN":             http.StatusForbidden,
+	"NOT_FOUND":        http.StatusNotFound,
+	"CONFLICT":         http.StatusConflict,
+	"VALIDATION_ERROR": http.StatusUnprocessableEntity,
+	"FORBIDDEN":        http.StatusForbidden,
 }
-
 
 type AppError struct {
 	ErrCode    string `json:"code"`
 	ErrMessage string `json:"error"`
 }
-
 
 func (e *AppError) Error() string {
 	return e.ErrMessage
@@ -39,8 +37,8 @@ func NewAppError(code string, message string) *AppError {
 }
 
 type ApiErrorResponse struct {
-	Error   string `json:"error"`            
-	Code    string `json:"code"`             
+	Error   string `json:"error"`
+	Code    string `json:"code"`
 	Details any    `json:"details,omitempty"`
 }
 
@@ -48,7 +46,6 @@ type invalidParam struct {
 	Name   string `json:"name"`
 	Reason string `json:"reason"`
 }
-
 
 func validationInvalidParams(err error) []invalidParam {
 	var validationErrs validator.ValidationErrors
@@ -70,8 +67,7 @@ func validationInvalidParams(err error) []invalidParam {
 	return result
 }
 
-
-func CustomHTTPErrorHandler(c *echo.Context,err error) {
+func CustomHTTPErrorHandler(c *echo.Context, err error) {
 	if err == nil {
 		return
 	}
@@ -81,7 +77,6 @@ func CustomHTTPErrorHandler(c *echo.Context,err error) {
 			return
 		}
 	}
-
 
 	// Default value
 	status := http.StatusInternalServerError

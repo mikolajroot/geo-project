@@ -5,17 +5,16 @@ import (
 	"net/http"
 	"os"
 
-
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
-	"github.com/go-playground/validator/v10"
 
-	"geo-project/pkg/database"
 	"geo-project/internal/layers/routes"
+	"geo-project/pkg/database"
 	"geo-project/pkg/errors"
 )
 
@@ -36,7 +35,6 @@ func main() {
 		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer sqlDB.Close()
-
 
 	goquDB := goqu.New("postgres", sqlDB)
 	log.Println("Goqu Query Builder initialized successfully")
@@ -59,10 +57,9 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-
 	api := e.Group("/api/v1")
 
-	routes.RegisterLayersRoutes(api, goquDB) 
+	routes.RegisterLayersRoutes(api, goquDB)
 
 	port := os.Getenv("PORT")
 	if port == "" {

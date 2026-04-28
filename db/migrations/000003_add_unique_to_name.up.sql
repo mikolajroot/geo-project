@@ -1,0 +1,1 @@
+ALTER TABLE layers ADD CONSTRAINT unique_layer_name UNIQUE (name);

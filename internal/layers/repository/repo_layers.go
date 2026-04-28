@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	models "geo-project/internal/layers/model"
+	"strings"
 
 	"github.com/doug-martin/goqu/v9"
 )
@@ -22,6 +24,8 @@ func NewLayerRepository(db *goqu.Database) LayerRepository {
 		db: db,
 	}
 }
+
+var ErrDuplicateLayerName = errors.New("layer with this name already exists")
 
 type LayerWithCount struct {
 	models.Layer
@@ -112,6 +116,10 @@ func (r *layerRepository) CreateLayer(ctx context.Context, layer models.Layer) (
 
 	var created models.Layer
 	if _, err := query.Executor().ScanStructContext(ctx, &created); err != nil {
+		if strings.Contains(err.Error(), "SQLSTATE 23505") {
+			return models.Layer{}, ErrDuplicateLayerName
+		}
+
 		return models.Layer{}, fmt.Errorf("db error: %w", err)
 	}
 

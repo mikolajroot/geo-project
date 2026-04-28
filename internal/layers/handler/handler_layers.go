@@ -71,12 +71,12 @@ func (h *layerHandler) HandleCreateLayer(c *echo.Context) error {
 	}
 
 	params := service.CreateLayerParams{
-        Name:         req.Name,
-        Description:  req.Description,
-        GeometryType: req.GeometryType,
-        SRID:         req.SRID,
-        OwnerID:      req.OwnerID,
-    }
+		Name:         req.Name,
+		Description:  req.Description,
+		GeometryType: req.GeometryType,
+		SRID:         req.SRID,
+		OwnerID:      req.OwnerID,
+	}
 
 	ctx := c.Request().Context()
 	layer, err := h.service.CreateLayer(ctx, params)

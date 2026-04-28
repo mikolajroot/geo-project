@@ -2,18 +2,21 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	models "geo-project/internal/layers/model"
 	repositories "geo-project/internal/layers/repository"
+	apperrors "geo-project/pkg/errors"
 	"math"
+
 )
 
 type CreateLayerParams struct {
-    Name         string
-    Description  string
-    GeometryType string
-    SRID         int32
-    OwnerID      *int32
+	Name         string
+	Description  string
+	GeometryType string
+	SRID         int32
+	OwnerID      *int32
 }
 
 type LayerService interface {
@@ -56,8 +59,6 @@ func (s *layerService) GetLayers(ctx context.Context, geometryType *string, stat
 	return layers, totalPages, nil
 }
 
-
-
 func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error) {
 	resolvedOwnerID := int32(1)
 	if params.OwnerID != nil && *params.OwnerID > 0 {
@@ -75,7 +76,11 @@ func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams
 
 	created, err := s.repo.CreateLayer(ctx, layer)
 	if err != nil {
-		return models.Layer{}, fmt.Errorf("failed to create layer: %w", err)
+		if errors.Is(err, repositories.ErrDuplicateLayerName) {
+            return models.Layer{}, apperrors.NewAppError("CONFLICT", "layer with this name already exists")
+        }
+
+        return models.Layer{}, fmt.Errorf("failed to create layer: %w", err)
 	}
 
 	return created, nil
