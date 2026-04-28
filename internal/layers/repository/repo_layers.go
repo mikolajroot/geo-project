@@ -14,6 +14,7 @@ type LayerRepository interface {
 	GetLayers(ctx context.Context, status *string, geometryType *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
 	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
 	CreateLayer(ctx context.Context, layer models.Layer) (models.Layer, error)
+	UpdateLayer(ctx context.Context, id int32, name *string, description *string, status *string) (models.Layer, error)
 }
 
 type layerRepository struct {
@@ -154,4 +155,52 @@ func (r *layerRepository) CreateLayer(ctx context.Context, layer models.Layer) (
 	}
 
 	return created, nil
+}
+
+func (r *layerRepository) UpdateLayer(ctx context.Context, id int32, name *string, description *string, status *string) (models.Layer, error) {
+	changes := goqu.Record{}
+	if name != nil {
+		changes["name"] = *name
+	}
+	if description != nil {
+		changes["description"] = *description
+	}
+	if status != nil {
+		changes["status"] = *status
+	}
+
+	if len(changes) == 0 {
+		return models.Layer{}, fmt.Errorf("No fields to update")
+	}
+
+	query := r.db.Update("layers").
+		Set(changes).
+		Where(goqu.Ex{"id": id}).
+		Returning(
+			"id",
+			"name",
+			"description",
+			"geometry_type",
+			"status",
+			"srid",
+			"owner_id",
+			"created_at",
+			"updated_at",
+		)
+
+	var updated models.Layer
+	found, err := query.Executor().ScanStructContext(ctx, &updated)
+	if err != nil {
+		if strings.Contains(err.Error(), "SQLSTATE 23505") {
+			return models.Layer{}, ErrDuplicateLayerName
+		}
+
+		return models.Layer{}, fmt.Errorf("db error: %w", err)
+	}
+
+	if !found {
+		return models.Layer{}, ErrLayerNotFound
+	}
+
+	return updated, nil
 }

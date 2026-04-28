@@ -18,5 +18,6 @@ func RegisterLayersRoutes(api *echo.Group, goquDB *goqu.Database) {
 	api.GET("/layers", layerHandler.HandleGetLayers)
 	api.GET("/layers/:id", layerHandler.HandleGetLayerByID)
 	api.POST("/layers", layerHandler.HandleCreateLayer)
+	api.PATCH("/layers/:id", layerHandler.HandleUpdateLayer)
 
 }

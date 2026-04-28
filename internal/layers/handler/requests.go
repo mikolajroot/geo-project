@@ -19,3 +19,10 @@ type CreateLayerRequest struct {
 type GetLayerByIDRequest struct {
 	ID int32 `param:"id" validate:"required,min=1"`
 }
+
+type UpdateLayerRequest struct {
+	ID          int32   `param:"id" validate:"required,min=1"`
+	Name        *string `json:"name" validate:"omitempty,min=3"`
+	Description *string `json:"description" validate:"omitempty"`
+	Status      *string `json:"status" validate:"omitempty,oneof=active draft archived"`
+}

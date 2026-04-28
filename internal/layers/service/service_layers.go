@@ -18,10 +18,17 @@ type CreateLayerParams struct {
 	OwnerID      *int32
 }
 
+type UpdateLayerParams struct {
+	Name        *string
+	Description *string
+	Status      *string
+}
+
 type LayerService interface {
 	GetLayers(ctx context.Context, geometryType *string, status *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
 	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
 	CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error)
+	UpdateLayer(ctx context.Context, id int32, userID int32, params UpdateLayerParams) (models.Layer, error)
 }
 
 type layerService struct {
@@ -97,4 +104,34 @@ func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams
 	}
 
 	return created, nil
+}
+
+func (s *layerService) UpdateLayer(ctx context.Context, id int32, userID int32, params UpdateLayerParams) (models.Layer, error) {
+	layer, err := s.repo.GetLayerByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repositories.ErrLayerNotFound) {
+			return models.Layer{}, apperrors.NewAppError("NOT_FOUND", "Layer with this id doesnt exist")
+		}
+
+		return models.Layer{}, fmt.Errorf("failed to fetch layer: %w", err)
+	}
+
+	if layer.OwnerID != userID {
+		return models.Layer{}, apperrors.NewAppError("FORBIDDEN", "You don`t have acces to this layer")
+	}
+
+	updated, err := s.repo.UpdateLayer(ctx, id, params.Name, params.Description, params.Status)
+	if err != nil {
+		if errors.Is(err, repositories.ErrDuplicateLayerName) {
+			return models.Layer{}, apperrors.NewAppError("CONFLICT", "layer with this name already exists")
+		}
+
+		if errors.Is(err, repositories.ErrLayerNotFound) {
+			return models.Layer{}, apperrors.NewAppError("NOT_FOUND", "Layer with this id doesnt exist")
+		}
+
+		return models.Layer{}, fmt.Errorf("failed to update layer: %w", err)
+	}
+
+	return updated, nil
 }
