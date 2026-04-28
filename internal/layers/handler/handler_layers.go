@@ -61,6 +61,36 @@ func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+func (h *layerHandler) HandleGetLayerByID(c *echo.Context) error {
+	var req GetLayerByIDRequest
+	if err := c.Bind(&req); err != nil {
+		return err 
+	}
+	if err := c.Validate(&req); err != nil {
+		return err 
+	}
+
+	ctx := c.Request().Context()
+	
+	layer, err := h.service.GetLayerByID(ctx, req.ID)
+	if err != nil {
+		return err
+	}
+
+	response := LayerResponse{
+		ID:           layer.ID,
+		Name:         layer.Name,
+		Description:  &layer.Description,
+		GeometryType: layer.GeometryType,
+		Status:       layer.Status,
+		OwnerID:      layer.OwnerID,
+		CreatedAt:    layer.CreatedAt,
+		UpdatedAt:    layer.UpdatedAt,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
 func (h *layerHandler) HandleCreateLayer(c *echo.Context) error {
 	var req CreateLayerRequest
 	if err := c.Bind(&req); err != nil {

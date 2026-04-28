@@ -8,7 +8,6 @@ import (
 	repositories "geo-project/internal/layers/repository"
 	apperrors "geo-project/pkg/errors"
 	"math"
-
 )
 
 type CreateLayerParams struct {
@@ -21,6 +20,7 @@ type CreateLayerParams struct {
 
 type LayerService interface {
 	GetLayers(ctx context.Context, geometryType *string, status *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
+	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
 	CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error)
 }
 
@@ -59,6 +59,19 @@ func (s *layerService) GetLayers(ctx context.Context, geometryType *string, stat
 	return layers, totalPages, nil
 }
 
+func (s *layerService) GetLayerByID(ctx context.Context, id int32) (models.Layer, error) {
+	layer, err := s.repo.GetLayerByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repositories.ErrLayerNotFound) {
+			return models.Layer{}, apperrors.NewAppError("NOT_FOUND", "Layer with this id doesnt exist")
+		}
+
+		return models.Layer{}, fmt.Errorf("failed to fetch layer: %w", err)
+	}
+
+	return layer, nil
+}
+
 func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error) {
 	resolvedOwnerID := int32(1)
 	if params.OwnerID != nil && *params.OwnerID > 0 {
@@ -77,10 +90,10 @@ func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams
 	created, err := s.repo.CreateLayer(ctx, layer)
 	if err != nil {
 		if errors.Is(err, repositories.ErrDuplicateLayerName) {
-            return models.Layer{}, apperrors.NewAppError("CONFLICT", "layer with this name already exists")
-        }
+			return models.Layer{}, apperrors.NewAppError("CONFLICT", "layer with this name already exists")
+		}
 
-        return models.Layer{}, fmt.Errorf("failed to create layer: %w", err)
+		return models.Layer{}, fmt.Errorf("failed to create layer: %w", err)
 	}
 
 	return created, nil

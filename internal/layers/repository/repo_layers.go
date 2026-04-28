@@ -12,6 +12,7 @@ import (
 
 type LayerRepository interface {
 	GetLayers(ctx context.Context, status *string, geometryType *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
+	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
 	CreateLayer(ctx context.Context, layer models.Layer) (models.Layer, error)
 }
 
@@ -26,6 +27,7 @@ func NewLayerRepository(db *goqu.Database) LayerRepository {
 }
 
 var ErrDuplicateLayerName = errors.New("layer with this name already exists")
+var ErrLayerNotFound = errors.New("layer not found")
 
 type LayerWithCount struct {
 	models.Layer
@@ -92,6 +94,34 @@ func (r *layerRepository) GetLayers(ctx context.Context, status *string, geometr
 
 	return layers, total, nil
 
+}
+
+func (r *layerRepository) GetLayerByID(ctx context.Context, id int32) (models.Layer, error) {
+	query := r.db.From("layers").
+		Select(
+			"id",
+			"name",
+			"description",
+			"geometry_type",
+			"status",
+			"srid",
+			"owner_id",
+			"created_at",
+			"updated_at",
+		).
+		Where(goqu.Ex{"id": id})
+
+	var layer models.Layer
+	found, err := query.Executor().ScanStructContext(ctx, &layer)
+	if err != nil {
+		return models.Layer{}, fmt.Errorf("db error: %w", err)
+	}
+
+	if !found {
+		return models.Layer{}, ErrLayerNotFound
+	}
+
+	return layer, nil
 }
 
 func (r *layerRepository) CreateLayer(ctx context.Context, layer models.Layer) (models.Layer, error) {
