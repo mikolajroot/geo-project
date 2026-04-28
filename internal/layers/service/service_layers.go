@@ -8,14 +8,22 @@ import (
 	"math"
 )
 
+type CreateLayerParams struct {
+    Name         string
+    Description  string
+    GeometryType string
+    SRID         int32
+    OwnerID      *int32
+}
+
 type LayerService interface {
-	GetLayers(ctx context.Context, geometryType *string, status *string, sortBy *string,page int, pageSize int) ([]models.Layer,int,error)
+	GetLayers(ctx context.Context, geometryType *string, status *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
+	CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error)
 }
 
 type layerService struct {
 	repo repositories.LayerRepository
 }
-
 
 func NewLayerService(repo repositories.LayerRepository) LayerService {
 	return &layerService{
@@ -24,7 +32,7 @@ func NewLayerService(repo repositories.LayerRepository) LayerService {
 }
 
 func (s *layerService) GetLayers(ctx context.Context, geometryType *string, status *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error) {
-	
+
 	if page <= 0 {
 		page = 1
 	}
@@ -46,4 +54,29 @@ func (s *layerService) GetLayers(ctx context.Context, geometryType *string, stat
 	}
 
 	return layers, totalPages, nil
+}
+
+
+
+func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error) {
+	resolvedOwnerID := int32(1)
+	if params.OwnerID != nil && *params.OwnerID > 0 {
+		resolvedOwnerID = *params.OwnerID
+	}
+
+	layer := models.Layer{
+		Name:         params.Name,
+		Description:  params.Description,
+		GeometryType: params.GeometryType,
+		Status:       "active",
+		SRID:         params.SRID,
+		OwnerID:      resolvedOwnerID,
+	}
+
+	created, err := s.repo.CreateLayer(ctx, layer)
+	if err != nil {
+		return models.Layer{}, fmt.Errorf("failed to create layer: %w", err)
+	}
+
+	return created, nil
 }

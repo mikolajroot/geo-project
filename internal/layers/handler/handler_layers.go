@@ -3,22 +3,20 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v5"
 	"geo-project/internal/layers/service"
-)
 
+	"github.com/labstack/echo/v5"
+)
 
 type layerHandler struct {
 	service service.LayerService
 }
-
 
 func NewLayerHandler(service service.LayerService) *layerHandler {
 	return &layerHandler{
 		service: service,
 	}
 }
-
 
 func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 	var req GetLayersRequest
@@ -31,23 +29,23 @@ func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	layers,totalPages, err := h.service.GetLayers(ctx,req.GeometryType,req.Status,req.SortBy,req.Page,req.PageSize)
+	layers, totalPages, err := h.service.GetLayers(ctx, req.GeometryType, req.Status, req.SortBy, req.Page, req.PageSize)
 	if err != nil {
 		return err
 	}
 
-	var response okResponse[LayerResponse];
+	var response okResponse[LayerResponse]
 	response.Data = make([]LayerResponse, 0, len(layers))
 	for _, l := range layers {
 		response.Data = append(response.Data, LayerResponse{
-			ID:   l.ID,
-			Name: l.Name,
-			Status: l.Status,
+			ID:           l.ID,
+			Name:         l.Name,
+			Status:       l.Status,
 			GeometryType: l.GeometryType,
-			Description: &l.Description,
-			OwnerID: l.OwnerID,
-			CreatedAt: l.CreatedAt,
-			UpdatedAt: l.UpdatedAt,
+			Description:  &l.Description,
+			OwnerID:      l.OwnerID,
+			CreatedAt:    l.CreatedAt,
+			UpdatedAt:    l.UpdatedAt,
 		})
 	}
 
@@ -57,8 +55,45 @@ func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 
 	response.Meta = PaginationResponse{
 		TotalPages: totalPages,
-		Page: req.Page,
+		Page:       req.Page,
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func (h *layerHandler) HandleCreateLayer(c *echo.Context) error {
+	var req CreateLayerRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	params := service.CreateLayerParams{
+        Name:         req.Name,
+        Description:  req.Description,
+        GeometryType: req.GeometryType,
+        SRID:         req.SRID,
+        OwnerID:      req.OwnerID,
+    }
+
+	ctx := c.Request().Context()
+	layer, err := h.service.CreateLayer(ctx, params)
+	if err != nil {
+		return err
+	}
+
+	response := LayerResponse{
+		ID:           layer.ID,
+		Name:         layer.Name,
+		Description:  &layer.Description,
+		GeometryType: layer.GeometryType,
+		Status:       layer.Status,
+		OwnerID:      layer.OwnerID,
+		CreatedAt:    layer.CreatedAt,
+		UpdatedAt:    layer.UpdatedAt,
+	}
+
+	return c.JSON(http.StatusCreated, response)
 }
