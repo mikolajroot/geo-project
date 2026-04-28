@@ -76,6 +76,13 @@ func CustomHTTPErrorHandler(c *echo.Context,err error) {
 		return
 	}
 
+	if resp, uErr := echo.UnwrapResponse(c.Response()); uErr == nil {
+		if resp.Committed {
+			return
+		}
+	}
+
+
 	// Default value
 	status := http.StatusInternalServerError
 	response := ApiErrorResponse{
