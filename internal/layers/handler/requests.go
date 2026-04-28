@@ -16,7 +16,7 @@ type CreateLayerRequest struct {
 	OwnerID      *int32 `json:"owner_id" validate:"omitempty,min=1"`
 }
 
-type GetLayerByIDRequest struct {
+type IDRequest struct {
 	ID int32 `param:"id" validate:"required,min=1"`
 }
 

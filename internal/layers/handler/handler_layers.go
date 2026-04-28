@@ -64,7 +64,7 @@ func (h *layerHandler) HandleGetLayers(c *echo.Context) error {
 }
 
 func (h *layerHandler) HandleGetLayerByID(c *echo.Context) error {
-	var req GetLayerByIDRequest
+	var req IDRequest
 	if err := c.Bind(&req); err != nil {
 		return err
 	}
@@ -141,14 +141,14 @@ func (h *layerHandler) HandleUpdateLayer(c *echo.Context) error {
 	}
 
 	if req.Name == nil && req.Description == nil {
-    	return apperrors.NewAppError("VALIDATION_ERROR", "Body empty")
+		return apperrors.NewAppError("VALIDATION_ERROR", "Body empty")
 	}
 
 	userID := int32(1)
 	if headerUserID := c.Request().Header.Get("X-User-ID"); headerUserID != "" {
 		parsedUserID, err := strconv.ParseInt(headerUserID, 10, 32)
 		if err != nil || parsedUserID <= 0 {
-			return apperrors.NewAppError("BAD_REQUEST","Bad owner id")
+			return apperrors.NewAppError("BAD_REQUEST", "Bad owner id")
 		}
 		userID = int32(parsedUserID)
 	}
@@ -159,6 +159,44 @@ func (h *layerHandler) HandleUpdateLayer(c *echo.Context) error {
 		Description: req.Description,
 		Status:      req.Status,
 	})
+	if err != nil {
+		return err
+	}
+
+	response := LayerResponse{
+		ID:           layer.ID,
+		Name:         layer.Name,
+		Description:  &layer.Description,
+		GeometryType: layer.GeometryType,
+		Status:       layer.Status,
+		OwnerID:      layer.OwnerID,
+		CreatedAt:    layer.CreatedAt,
+		UpdatedAt:    layer.UpdatedAt,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (h *layerHandler) HandleDeleteLayer(c *echo.Context) error {
+	var req IDRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	userID := int32(1)
+	if headerUserID := c.Request().Header.Get("X-User-ID"); headerUserID != "" {
+		parsedUserID, err := strconv.ParseInt(headerUserID, 10, 32)
+		if err != nil || parsedUserID <= 0 {
+			return apperrors.NewAppError("BAD_REQUEST", "Bad owner id")
+		}
+		userID = int32(parsedUserID)
+	}
+
+	ctx := c.Request().Context()
+	layer, err := h.service.DeleteLayer(ctx, int32(req.ID), userID)
 	if err != nil {
 		return err
 	}

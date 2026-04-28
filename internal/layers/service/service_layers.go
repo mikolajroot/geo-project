@@ -29,6 +29,7 @@ type LayerService interface {
 	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
 	CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error)
 	UpdateLayer(ctx context.Context, id int32, userID int32, params UpdateLayerParams) (models.Layer, error)
+	DeleteLayer(ctx context.Context, id int32, userID int32) (models.Layer, error)
 }
 
 type layerService struct {
@@ -134,4 +135,34 @@ func (s *layerService) UpdateLayer(ctx context.Context, id int32, userID int32, 
 	}
 
 	return updated, nil
+}
+
+func (s *layerService) DeleteLayer(ctx context.Context, id int32, userID int32) (models.Layer, error) {
+	layer, err := s.repo.GetLayerByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repositories.ErrLayerNotFound) {
+			return models.Layer{}, apperrors.NewAppError("NOT_FOUND", "Layer with this id doesnt exist")
+		}
+
+		return models.Layer{}, fmt.Errorf("failed to fetch layer: %w", err)
+	}
+
+	if layer.Status == "archived" {
+		return models.Layer{}, apperrors.NewAppError("CONFLICT", "Layer is already archived")
+	}
+
+	if layer.OwnerID != userID {
+		return models.Layer{}, apperrors.NewAppError("FORBIDDEN", "You don`t have acces to this layer")
+	}
+
+	archived, err := s.repo.ArchiveLayer(ctx, id)
+	if err != nil {
+		if errors.Is(err, repositories.ErrLayerNotFound) {
+			return models.Layer{}, apperrors.NewAppError("NOT_FOUND", "Layer with this id doesnt exist")
+		}
+
+		return models.Layer{}, fmt.Errorf("failed to archive layer: %w", err)
+	}
+
+	return archived, nil
 }
