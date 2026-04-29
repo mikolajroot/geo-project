@@ -64,9 +64,9 @@ func (r *layerRepository) GetLayers(ctx context.Context, status *string, geometr
 		goqu.L("COUNT(*) OVER()").As("total_count"),
 	)
 	if sortBy != nil {
-		query = query.Order(goqu.I(*sortBy).Asc())
+		query = query.Order(goqu.I(*sortBy).Desc())
 	} else {
-		query = query.Order(goqu.I("updated_at").Asc())
+		query = query.Order(goqu.I("updated_at").Desc())
 	}
 
 	query = query.Limit(uint(pageSize)).Offset(uint(offset))
