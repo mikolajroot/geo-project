@@ -42,6 +42,8 @@ func (r *layerRepository) GetLayers(ctx context.Context, status *string, geometr
 
 	if status != nil {
 		query = query.Where(goqu.Ex{"status": *status})
+	} else {
+		query = query.Where(goqu.Ex{"status": goqu.Op{"neq": "archived"}})
 	}
 
 	if geometryType != nil {

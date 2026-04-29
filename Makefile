@@ -34,3 +34,10 @@ migrate-version:
 
 migrate-drop:
 	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" drop -f
+
+seed:
+	docker compose up -d postgres
+	sleep 2
+	make migrate-up
+	docker compose build svc-layers
+	docker compose run -e SEED_DB=true --rm svc-layers

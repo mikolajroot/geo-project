@@ -3,6 +3,7 @@ module geo-project
 go 1.26.2
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/doug-martin/goqu/v9 v9.19.0
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/jackc/pgx/v5 v5.9.2
