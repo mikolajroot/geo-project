@@ -9,10 +9,10 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func RegisterAuthRoutes(api *echo.Group, client *ent.Client) {
+func RegisterAuthRoutes(api *echo.Group, client *ent.Client,jwtSecret string) {
 
 	userRepo := repositories.NewUserRepository(client)
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo,jwtSecret)
 	authHandler := handler.NewAuthHandler(authService)
 
 	api.POST("/register", authHandler.HandleRegister)

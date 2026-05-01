@@ -11,7 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func readSecret(filepath string) string {
+func ReadSecret(filepath string) string {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
 
@@ -35,8 +35,8 @@ func BuildDSN() string {
 		passFile = "/run/secrets/db_password"
 	}
 
-	user := readSecret(userFile)
-	pass := readSecret(passFile)
+	user := ReadSecret(userFile)
+	pass := ReadSecret(passFile)
 
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user, pass, host, port, dbName)

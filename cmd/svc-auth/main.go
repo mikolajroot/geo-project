@@ -11,6 +11,7 @@ import (
 
 	"geo-project/internal/auth/ent"
 	"geo-project/internal/auth/routes"
+	"geo-project/pkg/database"
 	apperrors "geo-project/pkg/errors"
 )
 
@@ -47,7 +48,9 @@ func main() {
 
 	api := e.Group("/api/v1/auth")
 
-	routes.RegisterAuthRoutes(api,client)
+	jwtSecret := database.ReadSecret("/run/secrets/secret_key")
+
+	routes.RegisterAuthRoutes(api,client,jwtSecret)
 
 
 	portEnv := os.Getenv("PORT")
