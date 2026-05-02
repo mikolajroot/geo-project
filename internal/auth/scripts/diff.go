@@ -44,6 +44,7 @@ func main() {
 		schema.WithMigrationMode(schema.ModeInspect),
 		schema.WithDialect("postgres"),
 		schema.WithDropIndex(true),
+		schema.WithDropColumn(true),
 		schema.WithFormatter(sqltool.GolangMigrateFormatter),
 	}
 
