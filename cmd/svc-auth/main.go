@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
 	_ "github.com/lib/pq"
 
@@ -14,14 +15,22 @@ import (
 	apperrors "geo-project/pkg/errors"
 )
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i any) error {
+	return cv.validator.Struct(i)
+}
+
 func main() {
 	log.Println("Starting Auth Service...")
 
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	dbName := os.Getenv("POSTGRES_DB")
-	user := os.Getenv("DB_USER")
-	pass := os.Getenv("DB_PASS")
+	user := database.ReadSecret("/run/secrets/db_user")
+	pass := database.ReadSecret("/run/secrets/db_password")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		host, port, user, dbName, pass)
@@ -37,6 +46,8 @@ func main() {
 	
 
 	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
+
+	e.Validator = &CustomValidator{validator: validator.New()}
 
 
 	api := e.Group("/api/v1/auth")
