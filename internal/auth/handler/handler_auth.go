@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"geo-project/internal/auth/service"
-	apperrors "geo-project/pkg/errors"
 
 	"github.com/labstack/echo/v5"
 )
@@ -19,3 +18,26 @@ func NewAuthHandler(service service.AuthService) *authHandler {
 	}
 }
 
+
+func (h *authHandler) HandleRegister(c *echo.Context) error {
+	var req LoginAndRegisterUserRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+
+	ctx := c.Request().Context()
+	jtwToken, err := h.service.RegisterService(ctx, req.Login,req.Password)
+	if err != nil {
+		return err
+	}
+
+	response := RegisterUserResponse{
+		JwtToken: jtwToken,
+	}
+
+	return c.JSON(http.StatusCreated, response)
+}
