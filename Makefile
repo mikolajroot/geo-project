@@ -1,4 +1,4 @@
-.PHONY: up down
+.PHONY: up down ent-generate
 
 include .env
 export
@@ -18,7 +18,7 @@ down:
 	docker compose down
 
 migrate-create:
-	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) -seq $(NAME)
+	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) $(NAME)
 
 migrate-up:
 	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
@@ -41,3 +41,9 @@ seed:
 	make migrate-up
 	docker compose build svc-layers
 	docker compose run -e SEED_DB=true --rm svc-layers
+
+ent-generate:
+	go generate ./internal/auth/ent
+
+ent-diff:
+	go run ./internal/auth/scripts/diff.go $(NAME)

@@ -48,6 +48,32 @@ services:
       postgres:
         condition: service_healthy
 
+  svc-auth:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: svc-auth
+    networks:
+      - app-net
+      - db-net
+    ports:
+      - "8082:8080"
+    environment:
+      - PORT=8080
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+    secrets:
+      - db_user
+      - db_password
+      - secret_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
 volumes:
     geo_postgres_data:
 
@@ -72,3 +98,5 @@ secrets:
     file: ./secrets/db_password.txt
   db_user:
     file: ./secrets/db_user.txt
+  secret_key:
+    file: ./secrets/secret_key.txt

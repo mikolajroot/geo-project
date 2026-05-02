@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -33,12 +32,6 @@ func main() {
 	}
 	defer client.Close()
 	log.Println("Connected to database")
-
-	ctx := context.Background()
-	if err := client.Schema.Create(ctx); err != nil {
-		log.Fatalf("Error when migrating %v", err)
-	}
-	log.Println("Migration complete")
 
 	e := echo.New()
 	
