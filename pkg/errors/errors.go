@@ -15,6 +15,7 @@ var httpStatusByCode = map[string]int{
 	"VALIDATION_ERROR": http.StatusUnprocessableEntity,
 	"FORBIDDEN":        http.StatusForbidden,
 	"BAD_REQUEST":      http.StatusBadRequest,
+	"UNAUTHORIZED":     http.StatusUnauthorized,
 }
 
 type AppError struct {

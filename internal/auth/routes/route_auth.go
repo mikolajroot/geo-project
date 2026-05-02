@@ -16,7 +16,7 @@ func RegisterAuthRoutes(api *echo.Group, client *ent.Client,jwtSecret string) {
 	authHandler := handler.NewAuthHandler(authService)
 
 	api.POST("/register", authHandler.HandleRegister)
-	// api.POST("/login", authHandler.HandleLogin)
+	api.POST("/login", authHandler.HandleLogin)
 	// api.POST("/refresh", authHandler.HandleRefreshToken)
 	
 

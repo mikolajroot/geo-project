@@ -1,7 +1,7 @@
 package handler
 
 
-type RegisterUserResponse struct{
+type LoginAndRegisterUserResponse struct{
 	JwtToken string `json:"jwt_token"`
 }
 

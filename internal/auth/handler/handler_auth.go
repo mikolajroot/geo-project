@@ -35,9 +35,31 @@ func (h *authHandler) HandleRegister(c *echo.Context) error {
 		return err
 	}
 
-	response := RegisterUserResponse{
+	response := LoginAndRegisterUserResponse{
 		JwtToken: jtwToken,
 	}
 
 	return c.JSON(http.StatusCreated, response)
+}
+
+func (h *authHandler) HandleLogin(c *echo.Context) error {
+	var req LoginAndRegisterUserRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	ctx := c.Request().Context()
+	jwtToken, err := h.service.LoginService(ctx, req.Login,req.Password)
+	if err != nil {
+		return err
+	}
+
+	response := LoginAndRegisterUserResponse{
+		JwtToken: jwtToken,
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
