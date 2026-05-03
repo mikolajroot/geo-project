@@ -9,8 +9,9 @@ import (
 )
 
 type UserRepository interface {
-	CreateNewUser(ctx context.Context,login string,passwordHash string) (*ent.User, error)
-	GetUserByLogin(ctx context.Context,login string)(*ent.User, error)
+	CreateNewUser(ctx context.Context, login string, passwordHash string) (*ent.User, error)
+	GetUserByLogin(ctx context.Context, login string) (*ent.User, error)
+	CreateSession(ctx context.Context, userID int, ipAddress string, device string) error
 }
 
 type userRepository struct {
@@ -27,7 +28,7 @@ var ErrUserAlreadyExists = errors.New("user with this login already exists")
 var ErrUserNotFound = errors.New("User login doesnt exists")
 
 func (r *userRepository) CreateNewUser(ctx context.Context, login string, passwordHash string) (*ent.User, error) {
-    
+
 	result, err := r.db.User.Create().
 		SetLogin(login).
 		SetPasswordHash(passwordHash).
@@ -37,7 +38,7 @@ func (r *userRepository) CreateNewUser(ctx context.Context, login string, passwo
 		if ent.IsConstraintError(err) {
 			return nil, ErrUserAlreadyExists
 		}
-		
+
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
@@ -53,4 +54,18 @@ func (r *userRepository) GetUserByLogin(ctx context.Context, login string) (*ent
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return result, nil
+}
+
+func (r *userRepository) CreateSession(ctx context.Context, userID int, ipAddress string, device string) error {
+	_, err := r.db.Session.Create().
+		SetUserID(userID).
+		SetIPAddress(ipAddress).
+		SetDevice(device).
+		Save(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+
+	return nil
 }

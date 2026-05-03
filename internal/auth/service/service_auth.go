@@ -11,19 +11,20 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
 type AuthService interface {
-	RegisterService(ctx context.Context,login string,password string) (string, error)
-	LoginService(ctx context.Context,login string,password string)(string , error)
+	RegisterService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error)
+	LoginService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error)
 }
 
 type authService struct {
-	repo repositories.UserRepository
+	repo      repositories.UserRepository
 	jwtSecret string
 }
 
 func NewAuthService(repo repositories.UserRepository, jwtSecret string) AuthService {
 	return &authService{
-		repo: repo,
+		repo:      repo,
 		jwtSecret: jwtSecret,
 	}
 }
@@ -34,23 +35,26 @@ type JwtCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *authService) RegisterService(ctx context.Context,login string,password string) (string, error){
+func (s *authService) RegisterService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error) {
 
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("Error when hashing password: %w",err)
+		return "", fmt.Errorf("Error when hashing password: %w", err)
 	}
 
 	hashedPassword := string(bytes)
 
-
-	
-	res, err := s.repo.CreateNewUser(ctx,login,hashedPassword)
+	res, err := s.repo.CreateNewUser(ctx, login, hashedPassword)
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserAlreadyExists) {
 			return "", apperrors.NewAppError("CONFLICT", "User with this login already exists")
 		}
 		return "", fmt.Errorf("failed to create user: %w", err)
+	}
+
+	err = s.repo.CreateSession(ctx, int(res.ID), ipAddress, device)
+	if err != nil {
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
 	claims := &JwtCustomClaims{
@@ -74,8 +78,8 @@ func (s *authService) RegisterService(ctx context.Context,login string,password 
 
 }
 
-func (s *authService) LoginService(ctx context.Context,login string,password string) (string , error) {
-	result , err := s.repo.GetUserByLogin(ctx,login)
+func (s *authService) LoginService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error) {
+	result, err := s.repo.GetUserByLogin(ctx, login)
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {
 			return "", apperrors.NewAppError("UNAUTHORIZED", "Incorrect login or password")
@@ -83,9 +87,14 @@ func (s *authService) LoginService(ctx context.Context,login string,password str
 		return "", fmt.Errorf("failed to retrieve user: %w", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(result.PasswordHash),[]byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(result.PasswordHash), []byte(password))
 	if err != nil {
 		return "", apperrors.NewAppError("UNAUTHORIZED", "Incorrect login or password")
+	}
+
+	err = s.repo.CreateSession(ctx, int(result.ID), ipAddress, device)
+	if err != nil {
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
 	claims := &JwtCustomClaims{

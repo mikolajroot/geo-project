@@ -18,7 +18,6 @@ func NewAuthHandler(service service.AuthService) *authHandler {
 	}
 }
 
-
 func (h *authHandler) HandleRegister(c *echo.Context) error {
 	var req LoginAndRegisterUserRequest
 	if err := c.Bind(&req); err != nil {
@@ -28,9 +27,10 @@ func (h *authHandler) HandleRegister(c *echo.Context) error {
 		return err
 	}
 
-
 	ctx := c.Request().Context()
-	jtwToken, err := h.service.RegisterService(ctx, req.Login,req.Password)
+	ipAddress := c.RealIP()
+	device := c.Request().Header.Get("User-Agent")
+	jtwToken, err := h.service.RegisterService(ctx, req.Login, req.Password, ipAddress, device)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,9 @@ func (h *authHandler) HandleLogin(c *echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	jwtToken, err := h.service.LoginService(ctx, req.Login,req.Password)
+	ipAddress := c.RealIP()
+	device := c.Request().Header.Get("User-Agent")
+	jwtToken, err := h.service.LoginService(ctx, req.Login, req.Password, ipAddress, device)
 	if err != nil {
 		return err
 	}
