@@ -37,7 +37,7 @@ func main() {
 
 	client, err := ent.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("?Connection error: %v", err)
+		log.Fatalf("Connection error: %v", err)
 	}
 	defer client.Close()
 	log.Println("Connected to database")

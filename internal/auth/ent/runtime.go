@@ -4,6 +4,7 @@ package ent
 
 import (
 	"geo-project/internal/auth/ent/schema"
+	"geo-project/internal/auth/ent/session"
 	"geo-project/internal/auth/ent/user"
 	"time"
 )
@@ -12,6 +13,20 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	sessionFields := schema.Session{}.Fields()
+	_ = sessionFields
+	// sessionDescIPAddress is the schema descriptor for ip_address field.
+	sessionDescIPAddress := sessionFields[0].Descriptor()
+	// session.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
+	session.IPAddressValidator = sessionDescIPAddress.Validators[0].(func(string) error)
+	// sessionDescDevice is the schema descriptor for device field.
+	sessionDescDevice := sessionFields[1].Descriptor()
+	// session.DeviceValidator is a validator for the "device" field. It is called by the builders before save.
+	session.DeviceValidator = sessionDescDevice.Validators[0].(func(string) error)
+	// sessionDescCreatedAt is the schema descriptor for created_at field.
+	sessionDescCreatedAt := sessionFields[2].Descriptor()
+	// session.DefaultCreatedAt holds the default value on creation for the created_at field.
+	session.DefaultCreatedAt = sessionDescCreatedAt.Default.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescLogin is the schema descriptor for login field.
