@@ -35,6 +35,12 @@ func main() {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		host, port, user, dbName, pass)
 
+	sqlDB, err := database.NewStandardDB()
+	if err != nil {
+		log.Fatalf("Database connection failed: %v", err)
+	}
+	defer sqlDB.Close()
+
 	client, err := ent.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Connection error: %v", err)
@@ -43,19 +49,16 @@ func main() {
 	log.Println("Connected to database")
 
 	e := echo.New()
-	
 
 	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-
 	api := e.Group("/api/v1/auth")
 
 	jwtSecret := database.ReadSecret("/run/secrets/secret_key")
 
-	routes.RegisterAuthRoutes(api,client,jwtSecret)
-
+	routes.RegisterAuthRoutes(api, client, sqlDB, jwtSecret)
 
 	portEnv := os.Getenv("PORT")
 	if portEnv == "" {

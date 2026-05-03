@@ -65,3 +65,17 @@ func (h *authHandler) HandleLogin(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
+
+func (h *authHandler) HandleGetStats(c *echo.Context) error {
+	ctx := c.Request().Context()
+
+	stats, err := h.service.GetSystemStatistics(ctx)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"status": "success",
+		"data":   stats,
+	})
+}

@@ -15,6 +15,7 @@ import (
 type AuthService interface {
 	RegisterService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error)
 	LoginService(ctx context.Context, login string, password string, ipAddress string, device string) (string, error)
+	GetSystemStatistics(ctx context.Context) (map[string]int, error)
 }
 
 type authService struct {
@@ -116,4 +117,13 @@ func (s *authService) LoginService(ctx context.Context, login string, password s
 
 	return signedToken, nil
 
+}
+
+func (s *authService) GetSystemStatistics(ctx context.Context) (map[string]int, error) {
+	stats, err := s.repo.GetRoleStatsRaw(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch system stats: %w", err)
+	}
+
+	return stats, nil
 }

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"database/sql"
 	"geo-project/internal/auth/ent"
 	"geo-project/internal/auth/handler"
 	repositories "geo-project/internal/auth/repository"
@@ -9,15 +10,15 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func RegisterAuthRoutes(api *echo.Group, client *ent.Client,jwtSecret string) {
+func RegisterAuthRoutes(api *echo.Group, client *ent.Client, sqlDB *sql.DB, jwtSecret string) {
 
-	userRepo := repositories.NewUserRepository(client)
-	authService := service.NewAuthService(userRepo,jwtSecret)
+	userRepo := repositories.NewUserRepository(client, sqlDB)
+	authService := service.NewAuthService(userRepo, jwtSecret)
 	authHandler := handler.NewAuthHandler(authService)
 
 	api.POST("/register", authHandler.HandleRegister)
 	api.POST("/login", authHandler.HandleLogin)
+	api.GET("/stats",authHandler.HandleGetStats)
 	// api.POST("/refresh", authHandler.HandleRefreshToken)
-	
 
 }
