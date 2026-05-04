@@ -1,7 +1,6 @@
 package handler
 
-
-type LoginAndRegisterUserResponse struct{
-	JwtToken string `json:"jwt_token"`
+type LoginAndRegisterUserResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 }
-

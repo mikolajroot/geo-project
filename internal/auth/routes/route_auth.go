@@ -18,7 +18,7 @@ func RegisterAuthRoutes(api *echo.Group, client *ent.Client, sqlDB *sql.DB, jwtS
 
 	api.POST("/register", authHandler.HandleRegister)
 	api.POST("/login", authHandler.HandleLogin)
-	api.GET("/stats",authHandler.HandleGetStats)
-	// api.POST("/refresh", authHandler.HandleRefreshToken)
+	api.POST("/refresh", authHandler.HandleRefreshToken)
+	api.GET("/stats", authHandler.HandleGetStats)
 
 }
