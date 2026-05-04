@@ -62,7 +62,7 @@ func main() {
 
 	portEnv := os.Getenv("PORT")
 	if portEnv == "" {
-		portEnv = "8082"
+		portEnv = "8081"
 	}
 
 	log.Printf("Auth service started at %s", portEnv)
