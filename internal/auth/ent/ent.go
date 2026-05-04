@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"geo-project/internal/auth/ent/refreshtoken"
 	"geo-project/internal/auth/ent/session"
 	"geo-project/internal/auth/ent/user"
 	"reflect"
@@ -74,8 +75,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			session.Table: session.ValidColumn,
-			user.Table:    user.ValidColumn,
+			refreshtoken.Table: refreshtoken.ValidColumn,
+			session.Table:      session.ValidColumn,
+			user.Table:         user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

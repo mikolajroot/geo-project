@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"geo-project/internal/auth/ent/refreshtoken"
 	"geo-project/internal/auth/ent/schema"
 	"geo-project/internal/auth/ent/session"
 	"geo-project/internal/auth/ent/user"
@@ -13,6 +14,20 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	refreshtokenFields := schema.RefreshToken{}.Fields()
+	_ = refreshtokenFields
+	// refreshtokenDescToken is the schema descriptor for token field.
+	refreshtokenDescToken := refreshtokenFields[0].Descriptor()
+	// refreshtoken.TokenValidator is a validator for the "token" field. It is called by the builders before save.
+	refreshtoken.TokenValidator = refreshtokenDescToken.Validators[0].(func(string) error)
+	// refreshtokenDescRevoked is the schema descriptor for revoked field.
+	refreshtokenDescRevoked := refreshtokenFields[1].Descriptor()
+	// refreshtoken.DefaultRevoked holds the default value on creation for the revoked field.
+	refreshtoken.DefaultRevoked = refreshtokenDescRevoked.Default.(bool)
+	// refreshtokenDescCreatedAt is the schema descriptor for created_at field.
+	refreshtokenDescCreatedAt := refreshtokenFields[2].Descriptor()
+	// refreshtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
+	refreshtoken.DefaultCreatedAt = refreshtokenDescCreatedAt.Default.(func() time.Time)
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields
 	// sessionDescIPAddress is the schema descriptor for ip_address field.

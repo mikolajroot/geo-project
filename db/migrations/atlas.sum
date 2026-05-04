@@ -1,7 +1,8 @@
-h1:5uYaH/WZukJyqoFnbaaU6nLiE/4nXJ/J187E+QRxgvo=
+h1:uQyyMbQ9EPnWMzKReo60xnC2P+q+daHvCw+s/NKlGyM=
 20260501000001_create_layers_table.up.sql h1:GTVOlogJawTQuXmvEWOTYx6m5Gvz6pVLbpTczm+87Wo=
 20260501000002_add_update_triger.up.sql h1:5hXAidev0TO4FdNrfc6eLeCXLufW8eBqJVI0Qg/6y4o=
 20260501000003_add_unique_to_name.up.sql h1:aDGLMBgkOYsdzwB+HRfK58q0OdiouChazfBNoT1cOmU=
 20260502132638_create_users_table.up.sql h1:T8MYw/9Ly0Jsf1e7J2P2WoohcfkiJ3L4mmWtHJrh8lU=
-20260502140629_deleted_double_index.up.sql h1:w2jcjm0X6MX+0WihjZdIWg0BfBSVZMe6gVw2vPVXrp4=
-20260503133032_create_session_table.up.sql h1:8opon0dHQv46SUhxWxsmOVNMtrIbbz2zfuJ0dDLTlSI=
+20260502140629_deleted_double_index.up.sql h1:HbcXwq0oNUDXgH05Y5CxMDYvnSz2NsJ48cfYG+Gz0YE=
+20260503133032_create_session_table.up.sql h1:cl1RXjgbi5wLXfm7mm/78u3OWF5vyC+M8jpc/Fh28LY=
+20260503143729_created_refresh_table.up.sql h1:PC54k4SSijFZj1ubtiMk0ujmzsqH1zgEVYU8CtaTHHk=
