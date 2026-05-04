@@ -18,6 +18,7 @@ type AuthService interface {
 	RegisterService(ctx context.Context, login string, password string, ipAddress string, device string) (*AuthTokens, error)
 	LoginService(ctx context.Context, login string, password string, ipAddress string, device string) (*AuthTokens, error)
 	RefreshService(ctx context.Context, refreshToken string) (*AuthTokens, error)
+	LogoutService(ctx context.Context, refreshToken string) error
 	GetSystemStatistics(ctx context.Context) (map[string]int, error)
 }
 
@@ -184,6 +185,26 @@ func (s *authService) RefreshService(ctx context.Context, refreshToken string) (
 
 	return &AuthTokens{AccessToken: accessToken, RefreshToken: newRefreshToken}, nil
 
+}
+
+func (s *authService) LogoutService(ctx context.Context, refreshToken string) error {
+	foundToken, err := s.repo.GetRefreshTokenByToken(ctx, refreshToken)
+	if err != nil {
+		if errors.Is(err, repositories.ErrRefreshTokenNotFound) {
+			return apperrors.NewAppError("UNAUTHORIZED", "Invalid refresh token")
+		}
+		return fmt.Errorf("failed to retrieve refresh token: %w", err)
+	}
+
+	if foundToken.Revoked {
+		return nil
+	}
+
+	if err := s.repo.RevokeRefreshToken(ctx, foundToken.ID); err != nil {
+		return fmt.Errorf("failed to revoke refresh token: %w", err)
+	}
+
+	return nil
 }
 
 func (s *authService) GetSystemStatistics(ctx context.Context) (map[string]int, error) {

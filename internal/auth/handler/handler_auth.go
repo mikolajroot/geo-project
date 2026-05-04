@@ -37,6 +37,21 @@ func setRefreshTokenCookie(c *echo.Context, refreshToken string) {
 	c.SetCookie(cookie)
 }
 
+func clearRefreshTokenCookie(c *echo.Context) {
+	cookie := &http.Cookie{
+		Name:     refreshTokenCookieName,
+		Value:    "",
+		Path:     "/api/v1/auth",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Unix(0, 0),
+	}
+
+	c.SetCookie(cookie)
+}
+
 func getRefreshTokenFromRequest(c *echo.Context) string {
 	if cookie, err := c.Cookie(refreshTokenCookieName); err == nil && cookie != nil && cookie.Value != "" {
 		return cookie.Value
@@ -111,6 +126,22 @@ func (h *authHandler) HandleRefreshToken(c *echo.Context) error {
 	return c.JSON(http.StatusOK, LoginAndRegisterUserResponse{
 		AccessToken: tokens.AccessToken,
 	})
+}
+
+func (h *authHandler) HandleLogout(c *echo.Context) error {
+	refreshToken := getRefreshTokenFromRequest(c)
+	if refreshToken == "" {
+		clearRefreshTokenCookie(c)
+		return c.NoContent(http.StatusNoContent)
+	}
+
+	ctx := c.Request().Context()
+	if err := h.service.LogoutService(ctx, refreshToken); err != nil {
+		return err
+	}
+
+	clearRefreshTokenCookie(c)
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *authHandler) HandleGetStats(c *echo.Context) error {
