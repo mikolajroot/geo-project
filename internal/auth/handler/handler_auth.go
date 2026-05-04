@@ -30,13 +30,14 @@ func (h *authHandler) HandleRegister(c *echo.Context) error {
 	ctx := c.Request().Context()
 	ipAddress := c.RealIP()
 	device := c.Request().Header.Get("User-Agent")
-	jtwToken, err := h.service.RegisterService(ctx, req.Login, req.Password, ipAddress, device)
+	tokens, err := h.service.RegisterService(ctx, req.Login, req.Password, ipAddress, device)
 	if err != nil {
 		return err
 	}
 
 	response := LoginAndRegisterUserResponse{
-		JwtToken: jtwToken,
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
 	}
 
 	return c.JSON(http.StatusCreated, response)
@@ -54,16 +55,38 @@ func (h *authHandler) HandleLogin(c *echo.Context) error {
 	ctx := c.Request().Context()
 	ipAddress := c.RealIP()
 	device := c.Request().Header.Get("User-Agent")
-	jwtToken, err := h.service.LoginService(ctx, req.Login, req.Password, ipAddress, device)
+	tokens, err := h.service.LoginService(ctx, req.Login, req.Password, ipAddress, device)
 	if err != nil {
 		return err
 	}
 
 	response := LoginAndRegisterUserResponse{
-		JwtToken: jwtToken,
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func (h *authHandler) HandleRefreshToken(c *echo.Context) error {
+	var req RefreshTokenRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	ctx := c.Request().Context()
+	tokens, err := h.service.RefreshService(ctx, req.RefreshToken)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, LoginAndRegisterUserResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+	})
 }
 
 func (h *authHandler) HandleGetStats(c *echo.Context) error {
