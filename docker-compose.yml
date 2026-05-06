@@ -42,9 +42,11 @@ services:
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
+      - SEED_DB=true
     secrets:
       - db_user
       - db_password
+      - secret_key
     depends_on:
       postgres:
         condition: service_healthy

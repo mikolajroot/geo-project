@@ -59,7 +59,8 @@ func main() {
 
 	api := e.Group("/api/v1")
 
-	routes.RegisterLayersRoutes(api, goquDB)
+	jwtSecret := database.ReadSecret("/run/secrets/secret_key")
+	routes.RegisterLayersRoutes(api, goquDB, jwtSecret)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -22,16 +22,15 @@ func NewSeeder(layerService service.LayerService) *Seeder {
 	}
 }
 
-func (s *Seeder) SeedDomainData(ctx context.Context, count int) {
-	log.Printf("Starting seeding %d random layers...", count)
-
+func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
+	log.Printf("Starting seeding %d random layers...", n)
 
 	gofakeit.Seed(0)
 
 	geometryTypes := []string{"POINT", "LINESTRING", "POLYGON", "MULTIPOINT", "MULTIPOLYGON"}
 	defaultOwner := int32(1)
 
-	for range count {
+	for range n {
 		randomName := fmt.Sprintf("%s - %s", gofakeit.City(), gofakeit.JobDescriptor())
 
 		params := service.CreateLayerParams{
@@ -50,10 +49,12 @@ func (s *Seeder) SeedDomainData(ctx context.Context, count int) {
 				continue
 			}
 			log.Printf("Critical error when seeding '%s': %v", params.Name, err)
+			return fmt.Errorf("seeding failed: %w", err)
 		} else {
 			log.Printf("Added: %s (%s)", params.Name, params.GeometryType)
 		}
 	}
 
 	log.Println("Seeding ended succesfully")
+	return nil
 }
