@@ -8,6 +8,7 @@ import (
 
 type FeatureService interface {
 	CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
+	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
 }
 
 type featureService struct {
@@ -37,4 +38,8 @@ func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int3
 	}
 
 	return feature, nil
+}
+
+func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error) {
+	return s.repo.UpdateFeatureByIDAndOwner(featureID, ownerExternalID, geometry, properties)
 }
