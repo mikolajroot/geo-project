@@ -77,6 +77,33 @@ services:
       postgres:
         condition: service_healthy
 
+  svc-features:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: svc-features
+    networks:
+      - app-net
+      - db-net
+      - proxy-net
+    expose:
+      - "8082"
+    environment:
+      - PORT=8082
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SEED_DB=false
+    secrets:
+      - db_user
+      - db_password
+      - secret_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   nginx:
     image: nginx:alpine
     ports:
@@ -86,6 +113,7 @@ services:
     depends_on:
       - svc-auth
       - svc-layers
+      - svc-features
     restart: always
     networks:
       - proxy-net
