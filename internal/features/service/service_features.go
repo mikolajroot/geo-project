@@ -7,7 +7,7 @@ import (
 )
 
 type FeatureService interface {
-	CreateFeature(ctx context.Context, ownerExternalID int32, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
+	CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
 }
 
 type featureService struct {
@@ -18,23 +18,21 @@ func NewFeatureService(repo repository.FeatureRepository) FeatureService {
 	return &featureService{repo: repo}
 }
 
-func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int32, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error) {
-	owner, err := s.repo.GetOwnerByExternalID(ownerExternalID)
-	if err != nil {
-		return nil, err
+func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error) {
+	owner := &model.Owner{
+		ExternalID: ownerExternalID,
+		Login:      ownerLogin,
 	}
 
 	feature := &model.Feature{
 		LayerID:    layerID,
-		OwnerID:    owner.ID,
 		Name:       name,
 		Type:       featureType,
 		Geometry:   geometry,
 		Properties: properties,
 	}
 
-	err = s.repo.CreateFeatureWithOwner(owner, feature)
-	if err != nil {
+	if err := s.repo.CreateFeatureWithOwner(owner, feature); err != nil {
 		return nil, err
 	}
 

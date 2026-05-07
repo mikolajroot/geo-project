@@ -9,7 +9,6 @@ import (
 
 type FeatureRepository interface {
 	CreateFeatureWithOwner(owner *model.Owner, feature *model.Feature) error
-	GetOwnerByExternalID(externalID int32) (*model.Owner, error)
 }
 
 type featureRepository struct {
@@ -22,28 +21,43 @@ func NewFeatureRepository(db *gorm.DB) FeatureRepository {
 
 func (r *featureRepository) CreateFeatureWithOwner(owner *model.Owner, feature *model.Feature) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		result := tx.FirstOrCreate(owner, model.Owner{ExternalID: owner.ExternalID})
+		result := tx.Assign(model.Owner{Login: owner.Login}).FirstOrCreate(owner, model.Owner{ExternalID: owner.ExternalID})
 		if result.Error != nil {
 			return apperrors.NewAppError("BAD_REQUEST", "failed to process owner")
 		}
 
 		feature.OwnerID = owner.ID
 
-		if err := tx.Create(feature).Error; err != nil {
+		if err := feature.BeforeCreate(tx); err != nil {
+			return err
+		}
+
+		err := tx.Raw(`
+			INSERT INTO features (layer_id, owner_id, name, type, geometry, properties)
+			VALUES (?, ?, ?, ?, ST_GeomFromGeoJSON(?), ?::jsonb)
+			RETURNING 
+				id, 
+				layer_id, 
+				owner_id, 
+				name, 
+				type, 
+				ST_AsGeoJSON(geometry) as geometry,
+				properties, 
+				created_at, 
+				updated_at
+		`,
+			feature.LayerID,
+			feature.OwnerID,
+			feature.Name,
+			feature.Type,
+			feature.Geometry,
+			feature.Properties,
+		).Scan(&feature).Error
+
+		if err != nil {
 			return apperrors.NewAppError("BAD_REQUEST", "failed to create feature")
 		}
 
 		return nil
 	})
-}
-
-func (r *featureRepository) GetOwnerByExternalID(externalID int32) (*model.Owner, error) {
-	var owner model.Owner
-	if err := r.db.Where("external_id = ?", externalID).First(&owner).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, apperrors.NewAppError("NOT_FOUND", "owner not found")
-		}
-		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to fetch owner")
-	}
-	return &owner, nil
 }

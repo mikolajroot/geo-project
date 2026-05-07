@@ -60,8 +60,14 @@ func (h *featureHandler) HandleCreateFeature(c *echo.Context) error {
 		OwnerID:    feature.OwnerID,
 		Name:       feature.Name,
 		Type:       feature.Type,
-		Geometry:   feature.Geometry,
-		Properties: feature.Properties,
+		Geometry:   json.RawMessage(feature.Geometry), 
+		Properties: func() json.RawMessage {
+			if feature.Properties == "" {
+				return json.RawMessage("{}")
+			}
+			return json.RawMessage(feature.Properties)
+		}(),
+		
 		CreatedAt:  feature.CreatedAt.String(),
 		UpdatedAt:  feature.UpdatedAt.String(),
 	}
