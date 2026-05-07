@@ -2,10 +2,10 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"geo-project/internal/layers/service"
 	apperrors "geo-project/pkg/errors"
+	"geo-project/pkg/midleware"
 
 	"github.com/labstack/echo/v5"
 )
@@ -144,14 +144,11 @@ func (h *layerHandler) HandleUpdateLayer(c *echo.Context) error {
 		return apperrors.NewAppError("VALIDATION_ERROR", "Body empty")
 	}
 
-	userID := int32(1)
-	if headerUserID := c.Request().Header.Get("X-User-ID"); headerUserID != "" {
-		parsedUserID, err := strconv.ParseInt(headerUserID, 10, 32)
-		if err != nil || parsedUserID <= 0 {
-			return apperrors.NewAppError("BAD_REQUEST", "Bad owner id")
-		}
-		userID = int32(parsedUserID)
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
 	}
+	userID := cl.UserID
 
 	ctx := c.Request().Context()
 	layer, err := h.service.UpdateLayer(ctx, int32(req.ID), userID, service.UpdateLayerParams{
@@ -186,14 +183,11 @@ func (h *layerHandler) HandleDeleteLayer(c *echo.Context) error {
 		return err
 	}
 
-	userID := int32(1)
-	if headerUserID := c.Request().Header.Get("X-User-ID"); headerUserID != "" {
-		parsedUserID, err := strconv.ParseInt(headerUserID, 10, 32)
-		if err != nil || parsedUserID <= 0 {
-			return apperrors.NewAppError("BAD_REQUEST", "Bad owner id")
-		}
-		userID = int32(parsedUserID)
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
 	}
+	userID := cl.UserID
 
 	ctx := c.Request().Context()
 	layer, err := h.service.DeleteLayer(ctx, int32(req.ID), userID)

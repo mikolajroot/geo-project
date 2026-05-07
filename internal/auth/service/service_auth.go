@@ -41,6 +41,7 @@ func NewAuthService(repo repositories.UserRepository, jwtSecret string) AuthServ
 
 type JwtCustomClaims struct {
 	UserID int32  `json:"user_id"`
+	Login  string `json:"login"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
@@ -54,9 +55,10 @@ func generateRefreshToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
-func buildAccessToken(secretKey string, userID int32, role string) (string, error) {
+func buildAccessToken(secretKey string, userID int32, login string, role string) (string, error) {
 	claims := &JwtCustomClaims{
 		UserID: userID,
+		Login:  login,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
@@ -91,7 +93,7 @@ func (s *authService) RegisterService(ctx context.Context, login string, passwor
 	}
 
 	secretKey := s.jwtSecret
-	accessToken, err := buildAccessToken(secretKey, int32(res.ID), res.Role.String())
+	accessToken, err := buildAccessToken(secretKey, int32(res.ID), res.Login, res.Role.String())
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +131,7 @@ func (s *authService) LoginService(ctx context.Context, login string, password s
 	}
 
 	secretKey := s.jwtSecret
-	accessToken, err := buildAccessToken(secretKey, int32(result.ID), result.Role.String())
+	accessToken, err := buildAccessToken(secretKey, int32(result.ID), result.Login, result.Role.String())
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +167,7 @@ func (s *authService) RefreshService(ctx context.Context, refreshToken string) (
 		return nil, fmt.Errorf("failed to load refresh token user: %w", err)
 	}
 
-	accessToken, err := buildAccessToken(s.jwtSecret, int32(user.ID), user.Role.String())
+	accessToken, err := buildAccessToken(s.jwtSecret, int32(user.ID), user.Login, user.Role.String())
 	if err != nil {
 		return nil, err
 	}

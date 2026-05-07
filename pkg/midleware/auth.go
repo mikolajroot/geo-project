@@ -1,8 +1,6 @@
 package midleware
 
 import (
-	"strconv"
-
 	apperrors "geo-project/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -25,7 +23,8 @@ func JWTAuthMiddleware(jwtSecret string) echo.MiddlewareFunc {
 			tokenStr := auth[len(bearer):]
 
 			type claims struct {
-				UserID int32 `json:"user_id"`
+				UserID int32  `json:"user_id"`
+				Login  string `json:"login"`
 				jwt.RegisteredClaims
 			}
 
@@ -40,8 +39,14 @@ func JWTAuthMiddleware(jwtSecret string) echo.MiddlewareFunc {
 			if cl.UserID <= 0 {
 				return apperrors.NewAppError("UNAUTHORIZED", "invalid token claims")
 			}
+			if cl.Login == "" {
+				return apperrors.NewAppError("UNAUTHORIZED", "invalid token claims")
+			}
 
-			c.Request().Header.Set("X-User-ID", strconv.Itoa(int(cl.UserID)))
+			newCtx := WithClaims(c.Request().Context(), Claims{UserID: cl.UserID, Login: cl.Login})
+			req := c.Request()
+			req = req.WithContext(newCtx)
+			c.SetRequest(req)
 
 			return next(c)
 		}

@@ -22,7 +22,13 @@ func ReadSecret(filepath string) string {
 
 func BuildDSN() string {
 	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "postgres"
+	}
 	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
 	dbName := os.Getenv("POSTGRES_DB")
 
 	userFile := os.Getenv("DB_USER_FILE")

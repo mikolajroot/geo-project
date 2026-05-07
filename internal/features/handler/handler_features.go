@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"geo-project/internal/features/service"
 	apperrors "geo-project/pkg/errors"
+	"geo-project/pkg/midleware"
 
 	"github.com/labstack/echo/v5"
 )
@@ -28,18 +29,27 @@ func (h *featureHandler) HandleCreateFeature(c *echo.Context) error {
 		return err
 	}
 
-	userIDStr := c.Request().Header.Get("X-User-ID")
-	if userIDStr == "" {
-		return apperrors.NewAppError("UNAUTHORIZED", "user id not found in token")
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
 	}
-
-	userID, err := strconv.ParseInt(userIDStr, 10, 32)
-	if err != nil || userID <= 0 {
-		return apperrors.NewAppError("BAD_REQUEST", "invalid user id from token")
-	}
+	userID := cl.UserID
+	userLogin := cl.Login
 
 	ctx := c.Request().Context()
-	feature, err := h.service.CreateFeature(ctx, int32(userID), req.Name, req.Type, req.Geometry, req.Properties, req.LayerID)
+	geoBytes, _ := json.Marshal(req.Geometry)
+	propBytes, _ := json.Marshal(req.Properties)
+
+	feature, err := h.service.CreateFeature(
+		ctx,
+		int32(userID),
+		userLogin,
+		req.Name,
+		req.Type,
+		string(geoBytes),
+		string(propBytes),
+		req.LayerID,
+	)
 	if err != nil {
 		return err
 	}
