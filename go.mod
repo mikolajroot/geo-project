@@ -3,6 +3,7 @@ module geo-project
 go 1.26.2
 
 require (
+	ariga.io/atlas v1.2.0
 	entgo.io/ent v0.14.6
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/doug-martin/goqu/v9 v9.19.0
@@ -13,10 +14,11 @@ require (
 	github.com/labstack/echo/v5 v5.1.0
 	github.com/lib/pq v1.12.3
 	golang.org/x/crypto v0.49.0
+	gorm.io/driver/postgres v1.6.0
+	gorm.io/gorm v1.31.1
 )
 
 require (
-	ariga.io/atlas v1.2.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
@@ -30,6 +32,8 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
