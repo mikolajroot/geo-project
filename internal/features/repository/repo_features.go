@@ -10,6 +10,8 @@ import (
 type FeatureRepository interface {
 	CreateFeatureWithOwner(owner *model.Owner, feature *model.Feature) error
 	UpdateFeatureByIDAndOwner(featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
+	GetFeatureByIDWithOwner(featureID int32) (*model.Feature, error)
+	DeleteFeatureByID(featureID int32) error
 }
 
 type featureRepository struct {
@@ -103,4 +105,24 @@ func (r *featureRepository) UpdateFeatureByIDAndOwner(featureID int32, ownerExte
 	}
 
 	return &feature, nil
+}
+
+func (r *featureRepository) GetFeatureByIDWithOwner(featureID int32) (*model.Feature, error) {
+	var feature model.Feature
+	if err := r.db.
+		Preload("Owner").
+		First(&feature, featureID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.NewAppError("NOT_FOUND", "feature not found")
+		}
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to load feature")
+	}
+	return &feature, nil
+}
+
+func (r *featureRepository) DeleteFeatureByID(featureID int32) error {
+	if err := r.db.Delete(&model.Feature{}, featureID).Error; err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "failed to delete feature")
+	}
+	return nil
 }

@@ -133,3 +133,24 @@ func (h *featureHandler) HandleUpdateFeature(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
+
+func (h *featureHandler) HandleDeleteFeature(c *echo.Context) error {
+	var req DeleteFeatureRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
+	if err := h.service.DeleteFeature(c.Request().Context(), req.ID, cl.UserID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}

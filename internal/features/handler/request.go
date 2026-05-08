@@ -13,3 +13,7 @@ type UpdateFeatureRequest struct {
 	Geometry   map[string]any `json:"geometry" validate:"required_without=Properties"`
 	Properties map[string]any `json:"properties" validate:"required_without=Geometry"`
 }
+
+type DeleteFeatureRequest struct {
+	ID int32 `param:"id" validate:"required,gt=0"`
+}
