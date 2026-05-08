@@ -11,6 +11,7 @@ type FeatureService interface {
 	CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
 	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
 	DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32) error
+	GetFeature(ctx context.Context, featureID int32) (*model.Feature, error)
 }
 
 type featureService struct {
@@ -57,4 +58,8 @@ func (s *featureService) DeleteFeature(ctx context.Context, featureID int32, own
 	}
 
 	return s.repo.DeleteFeatureByID(featureID)
+}
+
+func (s *featureService) GetFeature(ctx context.Context, featureID int32) (*model.Feature, error) {
+	return s.repo.GetFeatureByIDWithOwner(featureID)
 }

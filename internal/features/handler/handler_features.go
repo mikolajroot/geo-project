@@ -67,7 +67,7 @@ func (h *featureHandler) HandleCreateFeature(c *echo.Context) error {
 			}
 			return json.RawMessage(feature.Properties)
 		}(),
-
+		Owner:     &OwnerResponse{ID: feature.Owner.ID, Login: feature.Owner.Login},
 		CreatedAt: feature.CreatedAt.String(),
 		UpdatedAt: feature.UpdatedAt.String(),
 	}
@@ -127,6 +127,7 @@ func (h *featureHandler) HandleUpdateFeature(c *echo.Context) error {
 			}
 			return json.RawMessage(updated.Properties)
 		}(),
+		Owner:     &OwnerResponse{ID: updated.Owner.ID, Login: updated.Owner.Login},
 		CreatedAt: updated.CreatedAt.String(),
 		UpdatedAt: updated.UpdatedAt.String(),
 	}
@@ -153,4 +154,41 @@ func (h *featureHandler) HandleDeleteFeature(c *echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *featureHandler) HandleGetFeature(c *echo.Context) error {
+	var req struct {
+		ID int32 `param:"id" validate:"required,gt=0"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	feature, err := h.service.GetFeature(c.Request().Context(), req.ID)
+	if err != nil {
+		return err
+	}
+
+	response := FeatureResponse{
+		ID:       feature.ID,
+		LayerID:  feature.LayerID,
+		OwnerID:  feature.OwnerID,
+		Name:     feature.Name,
+		Type:     feature.Type,
+		Geometry: json.RawMessage(feature.Geometry),
+		Properties: func() json.RawMessage {
+			if feature.Properties == "" {
+				return json.RawMessage("{}")
+			}
+			return json.RawMessage(feature.Properties)
+		}(),
+		Owner:     &OwnerResponse{ID: feature.Owner.ID, Login: feature.Owner.Login},
+		CreatedAt: feature.CreatedAt.String(),
+		UpdatedAt: feature.UpdatedAt.String(),
+	}
+
+	return c.JSON(http.StatusOK, response)
 }

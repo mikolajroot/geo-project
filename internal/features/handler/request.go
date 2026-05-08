@@ -17,3 +17,7 @@ type UpdateFeatureRequest struct {
 type DeleteFeatureRequest struct {
 	ID int32 `param:"id" validate:"required,gt=0"`
 }
+
+type GetFeatureRequest struct {
+	ID int32 `param:"id" validate:"required,gt=0"`
+}

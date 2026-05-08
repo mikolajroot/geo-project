@@ -16,6 +16,7 @@ func RegisterFeaturesRoutes(api *echo.Group, gormDB *gorm.DB, jwtSecret string) 
 	featureHandler := handler.NewFeatureHandler(featureService)
 
 	api.POST("/features", featureHandler.HandleCreateFeature, midleware.JWTAuthMiddleware(jwtSecret))
+	api.GET("/features/:id", featureHandler.HandleGetFeature)
 	api.PUT("/features/:id", featureHandler.HandleUpdateFeature, midleware.JWTAuthMiddleware(jwtSecret))
 	api.DELETE("/features/:id", featureHandler.HandleDeleteFeature, midleware.JWTAuthMiddleware(jwtSecret))
 }

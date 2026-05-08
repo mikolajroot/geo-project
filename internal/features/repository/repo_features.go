@@ -111,7 +111,10 @@ func (r *featureRepository) GetFeatureByIDWithOwner(featureID int32) (*model.Fea
 	var feature model.Feature
 	if err := r.db.
 		Preload("Owner").
-		First(&feature, featureID).Error; err != nil {
+		Table("features").
+		Select("features.id, features.layer_id, features.owner_id, features.name, features.type, ST_AsGeoJSON(features.geometry) as geometry, features.properties, features.created_at, features.updated_at").
+		Where("features.id = ?", featureID).
+		First(&feature).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, apperrors.NewAppError("NOT_FOUND", "feature not found")
 		}
