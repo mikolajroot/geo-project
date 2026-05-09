@@ -2,14 +2,16 @@ package routes
 
 import (
 	"context"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
 	"geo-project/internal/layers/handler"
 	repositories "geo-project/internal/layers/repository"
 	seeder "geo-project/internal/layers/seed"
 	"geo-project/internal/layers/service"
 	"geo-project/pkg/midleware"
-	"log"
-	"os"
-	"time"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/labstack/echo/v5"
@@ -31,10 +33,17 @@ func RegisterLayersRoutes(api *echo.Group, goquDB *goqu.Database, jwtSecret stri
 	if os.Getenv("SEED_DB") == "true" {
 		dbSeeder := seeder.NewSeeder(layerService)
 
+		seedCount := 200
+		if v := os.Getenv("SEED_DB_COUNT"); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				seedCount = n
+			}
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		if err := dbSeeder.SeedDomainData(ctx,200); err != nil {
+		if err := dbSeeder.SeedDomainData(ctx, seedCount); err != nil {
 			log.Printf("db seeding failed: %v", err)
 		}
 	}
