@@ -157,9 +157,7 @@ func (h *featureHandler) HandleDeleteFeature(c *echo.Context) error {
 }
 
 func (h *featureHandler) HandleGetFeature(c *echo.Context) error {
-	var req struct {
-		ID int32 `param:"id" validate:"required,gt=0"`
-	}
+	var req GetFeatureRequest
 	if err := c.Bind(&req); err != nil {
 		return err
 	}
@@ -188,6 +186,59 @@ func (h *featureHandler) HandleGetFeature(c *echo.Context) error {
 		Owner:     &OwnerResponse{ID: feature.Owner.ID, Login: feature.Owner.Login},
 		CreatedAt: feature.CreatedAt.String(),
 		UpdatedAt: feature.UpdatedAt.String(),
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (h *featureHandler) HandleGetFeaturesByLayer(c *echo.Context) error {
+	var req GetFeaturesByLayerRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	features, totalPages, err := h.service.GetFeaturesByLayer(
+		c.Request().Context(),
+		req.LayerID,
+		req.Type,
+		req.SortBy,
+		req.Page,
+		req.PageSize,
+	)
+	if err != nil {
+		return err
+	}
+
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+
+	response := okResponse[FeatureResponse]{
+		Data: make([]FeatureResponse, 0, len(features)),
+		Meta: PaginationResponse{TotalPages: totalPages, Page: req.Page},
+	}
+
+	for _, feature := range features {
+		response.Data = append(response.Data, FeatureResponse{
+			ID:       feature.ID,
+			LayerID:  feature.LayerID,
+			OwnerID:  feature.OwnerID,
+			Name:     feature.Name,
+			Type:     feature.Type,
+			Geometry: json.RawMessage(feature.Geometry),
+			Properties: func() json.RawMessage {
+				if feature.Properties == "" {
+					return json.RawMessage("{}")
+				}
+				return json.RawMessage(feature.Properties)
+			}(),
+			Owner:     &OwnerResponse{ID: feature.Owner.ID, Login: feature.Owner.Login},
+			CreatedAt: feature.CreatedAt.String(),
+			UpdatedAt: feature.UpdatedAt.String(),
+		})
 	}
 
 	return c.JSON(http.StatusOK, response)

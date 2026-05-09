@@ -19,3 +19,13 @@ type FeatureResponse struct {
 	CreatedAt  string          `json:"created_at"`
 	UpdatedAt  string          `json:"updated_at"`
 }
+
+type PaginationResponse struct {
+	TotalPages int `json:"total_pages"`
+	Page       int `json:"page"`
+}
+
+type okResponse[T any] struct {
+	Data []T
+	Meta PaginationResponse
+}

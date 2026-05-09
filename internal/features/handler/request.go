@@ -21,3 +21,11 @@ type DeleteFeatureRequest struct {
 type GetFeatureRequest struct {
 	ID int32 `param:"id" validate:"required,gt=0"`
 }
+
+type GetFeaturesByLayerRequest struct {
+	LayerID  int32  `param:"layer_id" validate:"required,gt=0"`
+	Page     int    `query:"page" validate:"omitempty,gt=0"`
+	PageSize int    `query:"page_size" validate:"omitempty,gt=0,lte=100"`
+	SortBy   string `query:"sort_by" validate:"omitempty,oneof=name type created_at"`
+	Type     string `query:"type" validate:"omitempty"`
+}

@@ -11,6 +11,7 @@ type FeatureRepository interface {
 	CreateFeatureWithOwner(owner *model.Owner, feature *model.Feature) error
 	UpdateFeatureByIDAndOwner(featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
 	GetFeatureByIDWithOwner(featureID int32) (*model.Feature, error)
+	GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error)
 	DeleteFeatureByID(featureID int32) error
 }
 
@@ -121,6 +122,53 @@ func (r *featureRepository) GetFeatureByIDWithOwner(featureID int32) (*model.Fea
 		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to load feature")
 	}
 	return &feature, nil
+}
+
+func (r *featureRepository) GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error) {
+	baseQuery := r.db.Model(&model.Feature{}).Where("layer_id = ?", layerID)
+	if featureType != "" {
+		baseQuery = baseQuery.Where("type = ?", featureType)
+	}
+
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, apperrors.NewAppError("BAD_REQUEST", "failed to count features")
+	}
+
+	sortColumns := map[string]string{
+		"name":       "features.name",
+		"type":       "features.type",
+		"created_at": "features.created_at",
+	}
+	sortColumn, ok := sortColumns[sortBy]
+	if !ok {
+		sortColumn = "features.created_at"
+		sortBy = "created_at"
+	}
+
+	listQuery := r.db.
+		Table("features").
+		Select("features.id, features.layer_id, features.owner_id, features.name, features.type, ST_AsGeoJSON(features.geometry) as geometry, features.properties, features.created_at, features.updated_at").
+		Preload("Owner").
+		Where("features.layer_id = ?", layerID)
+	if featureType != "" {
+		listQuery = listQuery.Where("features.type = ?", featureType)
+	}
+
+	switch sortBy {
+	case "name", "type":
+		listQuery = listQuery.Order(sortColumn + " ASC")
+	default:
+		listQuery = listQuery.Order(sortColumn + " DESC")
+	}
+
+	offset := (page - 1) * pageSize
+	var features []model.Feature
+	if err := listQuery.Offset(offset).Limit(pageSize).Find(&features).Error; err != nil {
+		return nil, 0, apperrors.NewAppError("BAD_REQUEST", "failed to load features")
+	}
+
+	return features, int(total), nil
 }
 
 func (r *featureRepository) DeleteFeatureByID(featureID int32) error {
