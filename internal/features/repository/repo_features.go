@@ -3,6 +3,8 @@ package repository
 import (
 	"geo-project/internal/features/model"
 	apperrors "geo-project/pkg/errors"
+	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -11,7 +13,7 @@ type FeatureRepository interface {
 	CreateFeatureWithOwner(owner *model.Owner, feature *model.Feature) error
 	UpdateFeatureByIDAndOwner(featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
 	GetFeatureByIDWithOwner(featureID int32) (*model.Feature, error)
-	GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error)
+	GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error)
 	DeleteFeatureByID(featureID int32) error
 }
 
@@ -124,10 +126,28 @@ func (r *featureRepository) GetFeatureByIDWithOwner(featureID int32) (*model.Fea
 	return &feature, nil
 }
 
-func (r *featureRepository) GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error) {
+func (r *featureRepository) GetFeaturesByLayer(layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error) {
 	baseQuery := r.db.Model(&model.Feature{}).Where("layer_id = ?", layerID)
 	if featureType != "" {
 		baseQuery = baseQuery.Where("type = ?", featureType)
+	}
+
+	var bboxClause string
+	var bboxArgs []any
+	if bbox != "" {
+		coords := strings.Split(bbox, ",")
+		if len(coords) == 4 {
+			minX, err1 := strconv.ParseFloat(strings.TrimSpace(coords[0]), 64)
+			minY, err2 := strconv.ParseFloat(strings.TrimSpace(coords[1]), 64)
+			maxX, err3 := strconv.ParseFloat(strings.TrimSpace(coords[2]), 64)
+			maxY, err4 := strconv.ParseFloat(strings.TrimSpace(coords[3]), 64)
+
+			if err1 == nil && err2 == nil && err3 == nil && err4 == nil {
+				bboxClause = "ST_Intersects(features.geometry, ST_MakeEnvelope(?, ?, ?, ?, 4326))"
+				bboxArgs = []any{minX, minY, maxX, maxY}
+				baseQuery = baseQuery.Where(bboxClause, bboxArgs...)
+			}
+		}
 	}
 
 	var total int64
@@ -153,6 +173,10 @@ func (r *featureRepository) GetFeaturesByLayer(layerID int32, featureType string
 		Where("features.layer_id = ?", layerID)
 	if featureType != "" {
 		listQuery = listQuery.Where("features.type = ?", featureType)
+	}
+
+	if bboxClause != "" {
+		listQuery = listQuery.Where(bboxClause, bboxArgs...)
 	}
 
 	switch sortBy {

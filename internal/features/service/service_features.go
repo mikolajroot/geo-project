@@ -14,7 +14,7 @@ type FeatureService interface {
 	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
 	DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32) error
 	GetFeature(ctx context.Context, featureID int32) (*model.Feature, error)
-	GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error)
+	GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error)
 }
 
 type featureService struct {
@@ -67,7 +67,7 @@ func (s *featureService) GetFeature(ctx context.Context, featureID int32) (*mode
 	return s.repo.GetFeatureByIDWithOwner(featureID)
 }
 
-func (s *featureService) GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int) ([]model.Feature, int, error) {
+func (s *featureService) GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -78,7 +78,7 @@ func (s *featureService) GetFeaturesByLayer(ctx context.Context, layerID int32, 
 		pageSize = 100
 	}
 
-	features, total, err := s.repo.GetFeaturesByLayer(layerID, featureType, sortBy, page, pageSize)
+	features, total, err := s.repo.GetFeaturesByLayer(layerID, featureType, sortBy, page, pageSize, bbox)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch features: %w", err)
 	}

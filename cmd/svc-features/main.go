@@ -12,11 +12,11 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"geo-project/internal/features/handler"
 	"geo-project/internal/features/routes"
 	"geo-project/pkg/database"
 	apperrors "geo-project/pkg/errors"
 )
-
 
 type CustomValidator struct {
 	validator *validator.Validate
@@ -32,7 +32,6 @@ func main() {
 		log.Println("Warning: .env file not found. Relying on system environment variables.")
 	}
 
-
 	sqlDB, err := database.NewStandardDB()
 	if err != nil {
 		log.Fatalf("Database connection failed: %v", err)
@@ -47,12 +46,13 @@ func main() {
 	}
 	log.Println("GORM ORM initialized successfully")
 
-
 	e := echo.New()
 	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
-	e.Validator = &CustomValidator{validator: validator.New()}
 
-	
+	v := validator.New()
+	handler.RegisterCustomValidators(v)
+	e.Validator = &CustomValidator{validator: v}
+
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
 
@@ -66,13 +66,12 @@ func main() {
 
 	api := e.Group("/api/v1")
 	jwtSecret := database.ReadSecret("/run/secrets/secret_key")
-	
 
 	routes.RegisterFeaturesRoutes(api, gormDB, jwtSecret)
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8082" 
+		port = "8082"
 	}
 
 	log.Printf("Starting Spatial Features Service on port %s\n", port)

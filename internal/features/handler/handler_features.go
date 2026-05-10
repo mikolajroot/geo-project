@@ -207,6 +207,7 @@ func (h *featureHandler) HandleGetFeaturesByLayer(c *echo.Context) error {
 		req.SortBy,
 		req.Page,
 		req.PageSize,
+		req.BBox,
 	)
 	if err != nil {
 		return err
