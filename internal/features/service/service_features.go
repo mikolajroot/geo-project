@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"geo-project/internal/features/model"
 	"geo-project/internal/features/repository"
 	apperrors "geo-project/pkg/errors"
 	"math"
+	"net/http"
+	"strings"
 )
 
 type FeatureService interface {
@@ -26,6 +29,10 @@ func NewFeatureService(repo repository.FeatureRepository) FeatureService {
 }
 
 func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error) {
+	if err := verifyGeometryTypeWithLayerSvc(layerID, featureType); err != nil {
+		return nil, err
+	}
+	
 	owner := &model.Owner{
 		ExternalID: ownerExternalID,
 		Login:      ownerLogin,
@@ -89,4 +96,38 @@ func (s *featureService) GetFeaturesByLayer(ctx context.Context, layerID int32, 
 	}
 
 	return features, totalPages, nil
+}
+
+func verifyGeometryTypeWithLayerSvc(layerID int32, requestedFeatureType string) error {
+
+	url := fmt.Sprintf("http://svc-layers:8080/api/v1/layers/%d", layerID)
+	
+	resp, err := http.Get(url)
+	if err != nil {
+		return apperrors.NewAppError("INTERNAL_ERROR", "failed to connect to layers service")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return apperrors.NewAppError("NOT_FOUND", "target layer does not exist")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return apperrors.NewAppError("INTERNAL_ERROR", "failed to fetch layer details")
+	}
+
+	var layerData struct {
+		GeometryType string `json:"geometry_type"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&layerData); err != nil {
+		return apperrors.NewAppError("INTERNAL_ERROR", "failed to decode layer data")
+	}
+
+	if !strings.EqualFold(layerData.GeometryType, requestedFeatureType) {
+		return apperrors.NewAppError(
+			"BAD_REQUEST", 
+			fmt.Sprintf("geometry type mismatch: layer accepts only %s, but you provided %s", layerData.GeometryType, requestedFeatureType),
+		)
+	}
+
+	return nil
 }
