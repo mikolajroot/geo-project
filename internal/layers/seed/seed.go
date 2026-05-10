@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/doug-martin/goqu/v9"
 
 	"geo-project/internal/layers/service"
 	apperrors "geo-project/pkg/errors"
@@ -14,16 +15,24 @@ import (
 
 type Seeder struct {
 	layerService service.LayerService
+	goquDB       *goqu.Database
 }
 
-func NewSeeder(layerService service.LayerService) *Seeder {
+func NewSeeder(layerService service.LayerService, goquDB *goqu.Database) *Seeder {
 	return &Seeder{
 		layerService: layerService,
+		goquDB:       goquDB,
 	}
 }
 
 func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 	log.Printf("Starting seeding %d random layers...", n)
+
+	if s.goquDB != nil {
+		if _, err := s.goquDB.Exec("TRUNCATE TABLE layers RESTART IDENTITY CASCADE"); err != nil {
+			log.Printf("warning: truncate layers failed: %v", err)
+		}
+	}
 
 	gofakeit.Seed(0)
 

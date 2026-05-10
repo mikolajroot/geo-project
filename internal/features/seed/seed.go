@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
@@ -33,11 +34,15 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 	gofakeit.Seed(0)
 	rnd := rand.New(rand.NewSource(0))
 
-	layerIDs, err := s.fetchLayerIDs(ctx)
+	if err := s.db.WithContext(ctx).Exec("TRUNCATE TABLE features RESTART IDENTITY CASCADE").Error; err != nil {
+		log.Printf("warning: truncate features failed: %v", err)
+	}
+
+	layerInfos, err := s.fetchLayerInfos(ctx)
 	if err != nil {
 		return err
 	}
-	if len(layerIDs) == 0 {
+	if len(layerInfos) == 0 {
 		return fmt.Errorf("no layers found, cannot seed features")
 	}
 
@@ -46,10 +51,14 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 	defaultOwner := int32(1)
 
 	for range n {
-		geometryType := gofakeit.RandomString(geometryTypes)
+		li := layerInfos[rnd.Intn(len(layerInfos))]
+		geometryType := strings.ToUpper(li.GeometryType)
+		if geometryType == "" {
+			geometryType = gofakeit.RandomString(geometryTypes)
+		}
 		geometry := randomGeoJSON(geometryType)
 		featureType := gofakeit.RandomString(featureTypes)
-		layerID := layerIDs[rnd.Intn(len(layerIDs))]
+		layerID := li.ID
 		name := fmt.Sprintf("%s %s", gofakeit.Street(), gofakeit.Noun())
 
 		created, err := s.featureService.CreateFeature(
@@ -78,12 +87,17 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 	return nil
 }
 
-func (s *Seeder) fetchLayerIDs(ctx context.Context) ([]int32, error) {
-	var ids []int32
-	if err := s.db.WithContext(ctx).Table("layers").Order("id ASC").Pluck("id", &ids).Error; err != nil {
-		return nil, fmt.Errorf("failed to fetch layer ids: %w", err)
+type layerInfo struct {
+	ID           int32  `gorm:"column:id"`
+	GeometryType string `gorm:"column:geometry_type"`
+}
+
+func (s *Seeder) fetchLayerInfos(ctx context.Context) ([]layerInfo, error) {
+	var infos []layerInfo
+	if err := s.db.WithContext(ctx).Table("layers").Select("id, geometry_type").Order("id ASC").Scan(&infos).Error; err != nil {
+		return nil, fmt.Errorf("failed to fetch layer infos: %w", err)
 	}
-	return ids, nil
+	return infos, nil
 }
 
 func randomGeoJSON(geometryType string) string {

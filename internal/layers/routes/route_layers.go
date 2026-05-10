@@ -31,7 +31,7 @@ func RegisterLayersRoutes(api *echo.Group, goquDB *goqu.Database, jwtSecret stri
 	api.DELETE("/layers/:id", layerHandler.HandleDeleteLayer, midleware.JWTAuthMiddleware(jwtSecret))
 
 	if os.Getenv("SEED_DB") == "true" {
-		dbSeeder := seeder.NewSeeder(layerService)
+		dbSeeder := seeder.NewSeeder(layerService, goquDB)
 
 		seedCount := 200
 		if v := os.Getenv("SEED_DB_COUNT"); v != "" {

@@ -29,10 +29,10 @@ func NewFeatureService(repo repository.FeatureRepository) FeatureService {
 }
 
 func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error) {
-	if err := verifyGeometryTypeWithLayerSvc(layerID, featureType); err != nil {
+	if err := verifyGeometryTypeWithLayerSvc(layerID, geometry); err != nil {
 		return nil, err
 	}
-	
+
 	owner := &model.Owner{
 		ExternalID: ownerExternalID,
 		Login:      ownerLogin,
@@ -98,10 +98,9 @@ func (s *featureService) GetFeaturesByLayer(ctx context.Context, layerID int32, 
 	return features, totalPages, nil
 }
 
-func verifyGeometryTypeWithLayerSvc(layerID int32, requestedFeatureType string) error {
-
+func verifyGeometryTypeWithLayerSvc(layerID int32, geometry string) error {
 	url := fmt.Sprintf("http://svc-layers:8080/api/v1/layers/%d", layerID)
-	
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return apperrors.NewAppError("INTERNAL_ERROR", "failed to connect to layers service")
@@ -122,10 +121,24 @@ func verifyGeometryTypeWithLayerSvc(layerID int32, requestedFeatureType string) 
 		return apperrors.NewAppError("INTERNAL_ERROR", "failed to decode layer data")
 	}
 
-	if !strings.EqualFold(layerData.GeometryType, requestedFeatureType) {
+	var geom struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(geometry), &geom); err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "invalid geometry JSON")
+	}
+
+	provided := strings.ToUpper(geom.Type)
+	expected := strings.ToUpper(layerData.GeometryType)
+
+	if provided == "" || expected == "" {
+		return apperrors.NewAppError("BAD_REQUEST", "geometry type or layer geometry type is empty")
+	}
+
+	if provided != expected {
 		return apperrors.NewAppError(
-			"BAD_REQUEST", 
-			fmt.Sprintf("geometry type mismatch: layer accepts only %s, but you provided %s", layerData.GeometryType, requestedFeatureType),
+			"BAD_REQUEST",
+			fmt.Sprintf("geometry type mismatch: layer accepts only %s, but you provided %s", layerData.GeometryType, geom.Type),
 		)
 	}
 
