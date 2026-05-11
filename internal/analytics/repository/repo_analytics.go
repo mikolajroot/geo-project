@@ -12,6 +12,7 @@ import (
 
 type AnalyticsRepository interface {
 	Nearby(ctx context.Context, layerID int32, lat float64, lng float64, radius float64) ([]model.NearbyFeature, error)
+	Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error)
 }
 
 type analyticsRepository struct {
@@ -41,6 +42,31 @@ func (r *analyticsRepository) Nearby(ctx context.Context, layerID int32, lat flo
 	for rows.Next() {
 		var f model.NearbyFeature
 		if err := rows.Scan(&f.ID, &f.LayerID, &f.OwnerID, &f.Name, &f.Type, &f.Geometry, &f.Properties, &f.CreatedAt, &f.UpdatedAt, &f.DistanceMeters); err != nil {
+			return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("scan failed: %v", err))
+		}
+		out = append(out, f)
+	}
+
+	return out, nil
+}
+
+func (r *analyticsRepository) Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error) {
+	sql := `SELECT id, layer_id, owner_id, name, type, ST_AsGeoJSON(geometry) as geometry, properties::text, created_at, updated_at
+		FROM features
+		WHERE layer_id = $1
+		  AND ST_Intersects(features.geometry, ST_GeomFromGeoJSON($2))
+		LIMIT 1000;`
+
+	rows, err := r.pgx.Query(ctx, sql, layerID, geometry)
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("intersect query failed: %v", err))
+	}
+	defer rows.Close()
+
+	var out []model.NearbyFeature
+	for rows.Next() {
+		var f model.NearbyFeature
+		if err := rows.Scan(&f.ID, &f.LayerID, &f.OwnerID, &f.Name, &f.Type, &f.Geometry, &f.Properties, &f.CreatedAt, &f.UpdatedAt); err != nil {
 			return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("scan failed: %v", err))
 		}
 		out = append(out, f)

@@ -41,3 +41,29 @@ func (h *analyticsHandler) HandleNearby(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, NearbyResponse{Data: out})
 }
+
+func (h *analyticsHandler) HandleIntersect(c *echo.Context) error {
+	var req IntersectRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	results, err := h.svc.Intersect(c.Request().Context(), req.LayerID, string(req.Geometry))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to fetch intersecting features"})
+	}
+
+	out := make([]NearbyFeatureResponse, 0, len(results))
+	for _, r := range results {
+		out = append(out, NearbyFeatureResponse{
+			ID: r.ID, LayerID: r.LayerID, OwnerID: r.OwnerID, Name: r.Name, Type: r.Type,
+			Geometry: []byte(r.Geometry), Properties: []byte(r.Properties), DistanceMeters: r.DistanceMeters,
+			CreatedAt: r.CreatedAt.String(), UpdatedAt: r.UpdatedAt.String(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, NearbyResponse{Data: out})
+}

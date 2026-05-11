@@ -15,4 +15,5 @@ func RegisterAnalyticsRoutes(api *echo.Group, pgx *pgxpool.Pool, jwtSecret strin
 	h := handler.NewAnalyticsHandler(svc)
 
 	api.GET("/analytics/nearby", h.HandleNearby)
+	api.POST("/analytics/intersect", h.HandleIntersect)
 }

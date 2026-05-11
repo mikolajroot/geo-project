@@ -9,6 +9,7 @@ import (
 
 type AnalyticsService interface {
 	Nearby(ctx context.Context, layerID int32, lat float64, lng float64, radius float64) ([]model.NearbyFeature, error)
+	Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error)
 }
 
 type analyticsService struct {
@@ -21,4 +22,8 @@ func NewAnalyticsService(repo repository.AnalyticsRepository) AnalyticsService {
 
 func (s *analyticsService) Nearby(ctx context.Context, layerID int32, lat float64, lng float64, radius float64) ([]model.NearbyFeature, error) {
 	return s.repo.Nearby(ctx, layerID, lat, lng, radius)
+}
+
+func (s *analyticsService) Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error) {
+	return s.repo.Intersect(ctx, layerID, geometry)
 }

@@ -96,7 +96,7 @@ services:
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
-      - SEED_DB=true
+      - SEED_DB=false
       - SEED_DB_COUNT=${SEED_DB_COUNT}
     secrets:
       - db_user
