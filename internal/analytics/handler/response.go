@@ -10,7 +10,7 @@ type NearbyFeatureResponse struct {
 	Type           string          `json:"type"`
 	Geometry       json.RawMessage `json:"geometry"`
 	Properties     json.RawMessage `json:"properties"`
-	DistanceMeters float64         `json:"distance_m"`
+	DistanceMeters float64         `json:"distance_m,omitempty"`
 	CreatedAt      string          `json:"created_at"`
 	UpdatedAt      string          `json:"updated_at"`
 }
