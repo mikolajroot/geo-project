@@ -35,17 +35,11 @@ func (s *analyticsService) LayerStats(ctx context.Context, layerID int32) (model
 		return model.LayerStats{}, err
 	}
 
-	featureTypes, err := s.repo.LayerStatsFeatureTypes(ctx, layerID)
-	if err != nil {
-		return model.LayerStats{}, err
-	}
-
 	spatial, err := s.repo.LayerStatsSpatial(ctx, layerID)
 	if err != nil {
 		return model.LayerStats{}, err
 	}
 
-	totals.FeatureTypesCount = featureTypes
 	totals.LayerExtent = spatial.LayerExtent
 	totals.LastUpdatedFeature = spatial.LastUpdatedFeature
 	totals.LastUpdatedFeatureType = spatial.LastUpdatedFeatureType

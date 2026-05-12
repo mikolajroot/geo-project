@@ -90,6 +90,5 @@ func (h *analyticsHandler) HandleLayerStats(c *echo.Context) error {
 		LayerExtent:        stats.LayerExtent,
 		LastUpdatedFeature: stats.LastUpdatedFeature,
 		Type:               stats.LastUpdatedFeatureType,
-		FeatureTypesCount:  stats.FeatureTypesCount,
 	})
 }

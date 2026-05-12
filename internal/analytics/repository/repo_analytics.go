@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"geo-project/internal/analytics/model"
@@ -15,7 +17,6 @@ type AnalyticsRepository interface {
 	Nearby(ctx context.Context, layerID int32, lat float64, lng float64, radius float64) ([]model.NearbyFeature, error)
 	Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error)
 	LayerStatsTotals(ctx context.Context, layerID int32) (model.LayerStats, error)
-	LayerStatsFeatureTypes(ctx context.Context, layerID int32) (map[string]int64, error)
 	LayerStatsSpatial(ctx context.Context, layerID int32) (model.LayerStats, error)
 }
 
@@ -27,7 +28,20 @@ func NewAnalyticsRepository(pgx *pgxpool.Pool) AnalyticsRepository {
 	return &analyticsRepository{pgx: pgx}
 }
 
+func (r *analyticsRepository) ensureLayerExists(ctx context.Context, layerID int32) error {
+	layerExistsSQL := `SELECT 1 FROM layers WHERE id = $1 LIMIT 1;`
+	var exists int
+	if err := r.pgx.QueryRow(ctx, layerExistsSQL, layerID).Scan(&exists); err != nil {
+		return mapPgxError(err)
+	}
+	return nil
+}
+
 func (r *analyticsRepository) Nearby(ctx context.Context, layerID int32, lat float64, lng float64, radius float64) ([]model.NearbyFeature, error) {
+	if err := r.ensureLayerExists(ctx, layerID); err != nil {
+		return nil, err
+	}
+
 	sql := `SELECT id, layer_id, owner_id, name, type, ST_AsGeoJSON(geometry) as geometry, properties::text, created_at, updated_at,
         ST_Distance(geometry::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as distance_m
         FROM features
@@ -38,7 +52,7 @@ func (r *analyticsRepository) Nearby(ctx context.Context, layerID int32, lat flo
 
 	rows, err := r.pgx.Query(ctx, sql, lng, lat, layerID, radius)
 	if err != nil {
-		return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("nearby query failed: %v", err))
+		return nil, mapPgxError(err)
 	}
 	defer rows.Close()
 
@@ -46,7 +60,7 @@ func (r *analyticsRepository) Nearby(ctx context.Context, layerID int32, lat flo
 	for rows.Next() {
 		var f model.NearbyFeature
 		if err := rows.Scan(&f.ID, &f.LayerID, &f.OwnerID, &f.Name, &f.Type, &f.Geometry, &f.Properties, &f.CreatedAt, &f.UpdatedAt, &f.DistanceMeters); err != nil {
-			return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("scan failed: %v", err))
+			return nil, mapPgxError(err)
 		}
 		out = append(out, f)
 	}
@@ -55,6 +69,10 @@ func (r *analyticsRepository) Nearby(ctx context.Context, layerID int32, lat flo
 }
 
 func (r *analyticsRepository) Intersect(ctx context.Context, layerID int32, geometry string) ([]model.NearbyFeature, error) {
+	if err := r.ensureLayerExists(ctx, layerID); err != nil {
+		return nil, err
+	}
+
 	sql := `SELECT id, layer_id, owner_id, name, type, ST_AsGeoJSON(geometry) as geometry, properties::text, created_at, updated_at
 		FROM features
 		WHERE layer_id = $1
@@ -63,7 +81,7 @@ func (r *analyticsRepository) Intersect(ctx context.Context, layerID int32, geom
 
 	rows, err := r.pgx.Query(ctx, sql, layerID, geometry)
 	if err != nil {
-		return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("intersect query failed: %v", err))
+		return nil, mapPgxError(err)
 	}
 	defer rows.Close()
 
@@ -71,7 +89,7 @@ func (r *analyticsRepository) Intersect(ctx context.Context, layerID int32, geom
 	for rows.Next() {
 		var f model.NearbyFeature
 		if err := rows.Scan(&f.ID, &f.LayerID, &f.OwnerID, &f.Name, &f.Type, &f.Geometry, &f.Properties, &f.CreatedAt, &f.UpdatedAt); err != nil {
-			return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("scan failed: %v", err))
+			return nil, mapPgxError(err)
 		}
 		out = append(out, f)
 	}
@@ -80,6 +98,10 @@ func (r *analyticsRepository) Intersect(ctx context.Context, layerID int32, geom
 }
 
 func (r *analyticsRepository) LayerStatsTotals(ctx context.Context, layerID int32) (model.LayerStats, error) {
+	if err := r.ensureLayerExists(ctx, layerID); err != nil {
+		return model.LayerStats{}, err
+	}
+
 	stats := model.LayerStats{
 		LayerID: layerID,
 	}
@@ -92,36 +114,10 @@ func (r *analyticsRepository) LayerStatsTotals(ctx context.Context, layerID int3
 		WHERE layer_id = $1;`
 
 	if err := r.pgx.QueryRow(ctx, statsSQL, layerID).Scan(&stats.TotalFeatures, &stats.TotalAreaSqMeters, &stats.TotalLengthMeters); err != nil {
-		return model.LayerStats{}, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("layer stats query failed: %v", err))
+		return model.LayerStats{}, mapPgxError(err)
 	}
 
 	return stats, nil
-}
-
-func (r *analyticsRepository) LayerStatsFeatureTypes(ctx context.Context, layerID int32) (map[string]int64, error) {
-	featureTypes := make(map[string]int64)
-
-	typesSQL := `SELECT lower(GeometryType(geometry)) AS geometry_type, COUNT(*) AS cnt
-		FROM features
-		WHERE layer_id = $1
-		GROUP BY geometry_type;`
-
-	rows, err := r.pgx.Query(ctx, typesSQL, layerID)
-	if err != nil {
-		return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("feature types stats query failed: %v", err))
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var geometryType string
-		var count int64
-		if err := rows.Scan(&geometryType, &count); err != nil {
-			return nil, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("feature types stats scan failed: %v", err))
-		}
-		featureTypes[geometryType] = count
-	}
-
-	return featureTypes, nil
 }
 
 func (r *analyticsRepository) LayerStatsSpatial(ctx context.Context, layerID int32) (model.LayerStats, error) {
@@ -143,7 +139,7 @@ func (r *analyticsRepository) LayerStatsSpatial(ctx context.Context, layerID int
 
 	var minX, minY, maxX, maxY float64
 	if err := r.pgx.QueryRow(ctx, extentSQL, layerID).Scan(&minX, &minY, &maxX, &maxY); err != nil {
-		return model.LayerStats{}, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("layer extent query failed: %v", err))
+		return model.LayerStats{}, mapPgxError(err)
 	}
 	stats.LayerExtent = []float64{minX, minY, maxX, maxY}
 
@@ -155,7 +151,7 @@ func (r *analyticsRepository) LayerStatsSpatial(ctx context.Context, layerID int
 
 	rows, err := r.pgx.Query(ctx, latestSQL, layerID)
 	if err != nil {
-		return model.LayerStats{}, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("latest feature stats query failed: %v", err))
+		return model.LayerStats{}, mapPgxError(err)
 	}
 	defer rows.Close()
 
@@ -163,11 +159,43 @@ func (r *analyticsRepository) LayerStatsSpatial(ctx context.Context, layerID int
 		var updatedAt time.Time
 		var geometryType string
 		if err := rows.Scan(&updatedAt, &geometryType); err != nil {
-			return model.LayerStats{}, apperrors.NewAppError("BAD_REQUEST", fmt.Sprintf("latest feature stats scan failed: %v", err))
+			return model.LayerStats{}, mapPgxError(err)
 		}
 		stats.LastUpdatedFeature = updatedAt.UTC().Format(time.RFC3339)
 		stats.LastUpdatedFeatureType = geometryType
 	}
 
 	return stats, nil
+}
+
+func mapPgxError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return apperrors.NewAppError("NOT_FOUND", "resource not found")
+	}
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+		switch pgErr.Code {
+		case "23505": // unique_violation
+			return apperrors.NewAppError("CONFLICT", "A record with this information already exists. Please provide unique values.")
+
+		case "23503": // foreign_key_violation
+			return apperrors.NewAppError("BAD_REQUEST", "The operation failed because a related item does not exist.")
+
+		case "23502": // not_null_violation
+			return apperrors.NewAppError("BAD_REQUEST", "A required field is missing. Please ensure all mandatory information is provided.")
+
+		case "22012": // division_by_zero
+			return apperrors.NewAppError("BAD_REQUEST", "The calculation failed due to invalid spatial input data.")
+
+		case "42883": // undefined_function
+			return apperrors.NewAppError("INTERNAL_ERROR", "We encountered an issue while processing your map data. Please contact support.")
+
+		default:
+			return apperrors.NewAppError("INTERNAL_ERROR", "An unexpected database error occurred. Please try again later.")
+		}
+	}
+	return apperrors.NewAppError("INTERNAL_ERROR", "An unexpected server error occurred. Please try again later.")
 }

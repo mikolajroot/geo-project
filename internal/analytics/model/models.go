@@ -23,5 +23,5 @@ type LayerStats struct {
 	LayerExtent            []float64        `json:"layer_extent,omitempty"`
 	LastUpdatedFeature     string           `json:"last_updated_feature,omitempty"`
 	LastUpdatedFeatureType string           `json:"type,omitempty"`
-	FeatureTypesCount      map[string]int64 `json:"feature_types_count"`
+	FeatureTypesCount      int `json:"feature_types_count"`
 }
