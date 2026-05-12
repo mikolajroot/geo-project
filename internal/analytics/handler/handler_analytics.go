@@ -27,7 +27,7 @@ func (h *analyticsHandler) HandleNearby(c *echo.Context) error {
 
 	results, err := h.svc.Nearby(c.Request().Context(), req.LayerID, req.Lat, req.Lng, req.RadiusMeters)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to fetch nearby features"})
+		return err
 	}
 
 	out := make([]NearbyFeatureResponse, 0, len(results))
@@ -53,7 +53,7 @@ func (h *analyticsHandler) HandleIntersect(c *echo.Context) error {
 
 	results, err := h.svc.Intersect(c.Request().Context(), req.LayerID, string(req.Geometry))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to fetch intersecting features"})
+		return err
 	}
 
 	out := make([]NearbyFeatureResponse, 0, len(results))
@@ -66,4 +66,30 @@ func (h *analyticsHandler) HandleIntersect(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, NearbyResponse{Data: out})
+}
+
+func (h *analyticsHandler) HandleLayerStats(c *echo.Context) error {
+	var req LayerStatsRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	stats, err := h.svc.LayerStats(c.Request().Context(), req.LayerID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, LayerStatsResponse{
+		LayerID:            stats.LayerID,
+		TotalFeatures:      stats.TotalFeatures,
+		TotalAreaSqMeters:  stats.TotalAreaSqMeters,
+		TotalLengthMeters:  stats.TotalLengthMeters,
+		LayerExtent:        stats.LayerExtent,
+		LastUpdatedFeature: stats.LastUpdatedFeature,
+		Type:               stats.LastUpdatedFeatureType,
+		FeatureTypesCount:  stats.FeatureTypesCount,
+	})
 }

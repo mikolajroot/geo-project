@@ -13,3 +13,7 @@ type IntersectRequest struct {
 	LayerID  int32           `json:"layer_id" validate:"required,gt=0"`
 	Geometry json.RawMessage `json:"geometry" validate:"required"`
 }
+
+type LayerStatsRequest struct {
+	LayerID int32 `param:"layer_id" validate:"required,gt=0"`
+}

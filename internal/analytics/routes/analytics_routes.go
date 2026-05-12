@@ -16,4 +16,5 @@ func RegisterAnalyticsRoutes(api *echo.Group, pgx *pgxpool.Pool, jwtSecret strin
 
 	api.GET("/analytics/nearby", h.HandleNearby)
 	api.POST("/analytics/intersect", h.HandleIntersect)
+	api.GET("/analytics/layers/:layer_id/stats", h.HandleLayerStats)
 }

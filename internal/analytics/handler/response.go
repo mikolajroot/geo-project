@@ -18,3 +18,14 @@ type NearbyFeatureResponse struct {
 type NearbyResponse struct {
 	Data []NearbyFeatureResponse `json:"data"`
 }
+
+type LayerStatsResponse struct {
+	LayerID            int32            `json:"layer_id"`
+	TotalFeatures      int64            `json:"total_features"`
+	TotalAreaSqMeters  float64          `json:"total_area_sq_meters"`
+	TotalLengthMeters  float64          `json:"total_length_meters"`
+	LayerExtent        []float64        `json:"layer_extent,omitempty"`
+	LastUpdatedFeature string           `json:"last_updated_feature,omitempty"`
+	Type               string           `json:"type,omitempty"`
+	FeatureTypesCount  map[string]int64 `json:"feature_types_count"`
+}
