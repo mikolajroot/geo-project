@@ -22,6 +22,7 @@ type CreateAnnotationParams struct {
 
 type AnnotationsService interface {
 	CreateAnnotation(ctx context.Context, params CreateAnnotationParams) (model.Annotation, error)
+	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 }
 
 type annotationsService struct {
@@ -49,11 +50,14 @@ func (s *annotationsService) CreateAnnotation(ctx context.Context, params Create
 	return s.repo.CreateAnnotation(ctx, annotation)
 }
 
+func (s *annotationsService) Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error) {
+	return s.repo.Nearby(ctx, lat, lng, maxDistance)
+}
 
 func verifyLayerExists(layerID int32) error {
 
 	url := fmt.Sprintf("http://svc-layers:8080/api/v1/layers/%d", layerID)
-	
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return apperrors.NewAppError("INTERNAL_ERROR", "failed to communicate with layers service")
@@ -63,7 +67,7 @@ func verifyLayerExists(layerID int32) error {
 	if resp.StatusCode == http.StatusNotFound {
 		return apperrors.NewAppError("NOT_FOUND", fmt.Sprintf("layer with ID %d does not exist", layerID))
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return apperrors.NewAppError("INTERNAL_ERROR", "failed to verify layer existence")
 	}

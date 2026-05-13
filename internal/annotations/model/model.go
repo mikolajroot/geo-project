@@ -19,3 +19,13 @@ type Annotation struct {
 	Location  MongoGeoJSON  `bson:"location"`
 	CreatedAt time.Time     `bson:"created_at"`
 }
+
+type NearbyAnnotation struct {
+	ID             bson.ObjectID `bson:"_id,omitempty"`
+	AuthorID       int32         `bson:"author_id"`
+	LayerID        int32         `bson:"layer_id"`
+	Text           string        `bson:"text"`
+	Location       MongoGeoJSON  `bson:"location"`
+	CreatedAt      time.Time     `bson:"created_at"`
+	DistanceMeters float64       `bson:"distance_meters"`
+}

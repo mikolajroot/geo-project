@@ -14,6 +14,7 @@ import (
 
 type AnnotationsRepository interface {
 	CreateAnnotation(ctx context.Context, annotation model.Annotation) (model.Annotation, error)
+	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 }
 
 type annotationsRepository struct {
@@ -49,4 +50,40 @@ func (r *annotationsRepository) CreateAnnotation(ctx context.Context, annotation
 	}
 
 	return annotation, nil
+}
+
+func (r *annotationsRepository) Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error) {
+	pipeline := mongo.Pipeline{
+		{{Key: "$geoNear", Value: bson.D{
+			{Key: "near", Value: bson.D{
+				{Key: "type", Value: "Point"},
+				{Key: "coordinates", Value: bson.A{lng, lat}},
+			}},
+			{Key: "distanceField", Value: "distance_meters"},
+			{Key: "maxDistance", Value: maxDistance},
+			{Key: "spherical", Value: true},
+			{Key: "key", Value: "location"},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to search nearby annotations")
+	}
+	defer cursor.Close(ctx)
+
+	results := make([]model.NearbyAnnotation, 0)
+	for cursor.Next(ctx) {
+		var item model.NearbyAnnotation
+		if err := cursor.Decode(&item); err != nil {
+			return nil, apperrors.NewAppError("BAD_REQUEST", "failed to decode nearby annotation")
+		}
+		results = append(results, item)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to read nearby annotations")
+	}
+
+	return results, nil
 }
