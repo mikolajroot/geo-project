@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	_ "github.com/lib/pq"
 
 	"geo-project/internal/auth/ent"
@@ -53,6 +54,9 @@ func main() {
 	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
 
 	e.Validator = &CustomValidator{validator: validator.New()}
+
+	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
 
 	api := e.Group("/api/v1/auth")
 

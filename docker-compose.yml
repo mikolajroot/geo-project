@@ -146,6 +146,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  svc-annotations:
+    build: 
+      context: .
+      args:
+        SERVICE_NAME: svc-annotations
+    environment:
+      - MONGO_URI=mongodb://admin:secret@mongodb:27017/
+      - MONGO_DB_NAME=geo_annotations
+      - PORT=8084
+    expose:
+      - "8084"
+    depends_on:
+      - mongodb
+    networks:
+      - app-net
+      - db-net
+      - proxy-net
+    secrets:
+      - secret_key
 
   nginx:
     image: nginx:alpine
@@ -158,6 +177,7 @@ services:
       - svc-layers
       - svc-features
       - svc-analytics
+      - svc-annotations
     restart: always
     networks:
       - proxy-net

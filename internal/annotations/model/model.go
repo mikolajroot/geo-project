@@ -1,0 +1,21 @@
+package model
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
+
+type MongoGeoJSON struct {
+	Type        string    `bson:"type"`
+	Coordinates []float64 `bson:"coordinates"`
+}
+
+type Annotation struct {
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	AuthorID  int32         `bson:"author_id"`
+	LayerID   int32         `bson:"layer_id"`
+	Text      string        `bson:"text"`
+	Location  MongoGeoJSON  `bson:"location"`
+	CreatedAt time.Time     `bson:"created_at"`
+}
