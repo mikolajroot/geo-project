@@ -125,6 +125,11 @@ services:
         condition: service_healthy
       svc-layers:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   svc-analytics:
     build:
@@ -160,15 +165,27 @@ services:
       - MONGO_URI=mongodb://admin:secret@mongodb:27017/
       - MONGO_DB_NAME=geo_annotations
       - PORT=8084
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SEED_DB=${SEED_DB}
+      - SEED_DB_COUNT=${SEED_DB_COUNT}
     expose:
       - "8084"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
+      svc-features:
+        condition: service_healthy
     networks:
       - app-net
       - db-net
       - proxy-net
     secrets:
+      - db_user
+      - db_password
       - secret_key
 
   nginx:

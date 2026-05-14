@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"geo-project/internal/annotations/routes"
+	seeder "geo-project/internal/annotations/seed"
 
 	"github.com/go-playground/validator/v10"
 
@@ -47,6 +49,38 @@ func main() {
 	}
 
 	db := client.Database(dbName)
+
+	var sqlDBClose func()
+	if os.Getenv("SEED_DB") == "true" {
+		sqlDB, err := database.NewStandardDB()
+		if err != nil {
+			log.Printf("annotations seeding skipped: postgres connection failed: %v", err)
+		} else {
+			sqlDBClose = func() {
+				if err := sqlDB.Close(); err != nil {
+					log.Printf("Error closing postgres connection: %v", err)
+				}
+			}
+
+			seedCount := 200
+			if v := os.Getenv("SEED_DB_COUNT"); v != "" {
+				if n, convErr := strconv.Atoi(v); convErr == nil && n > 0 {
+					seedCount = n
+				}
+			}
+
+			seedCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			dbSeeder := seeder.NewSeeder(db, sqlDB)
+			if err := dbSeeder.SeedDomainData(seedCtx, seedCount); err != nil {
+				log.Printf("annotations db seeding failed: %v", err)
+			}
+		}
+	}
+	if sqlDBClose != nil {
+		defer sqlDBClose()
+	}
 
 	e := echo.New()
 	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
