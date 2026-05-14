@@ -14,6 +14,7 @@ import (
 
 type AnnotationsRepository interface {
 	CreateAnnotation(ctx context.Context, annotation model.Annotation) (model.Annotation, error)
+	ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error)
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 }
@@ -51,6 +52,35 @@ func (r *annotationsRepository) CreateAnnotation(ctx context.Context, annotation
 	}
 
 	return annotation, nil
+}
+
+func (r *annotationsRepository) ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error) {
+	filter := bson.M{
+		"layer_id": bson.M{
+			"$in": layerIDs,
+		},
+	}
+
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to list annotations")
+	}
+	defer cursor.Close(ctx)
+
+	results := make([]model.Annotation, 0)
+	for cursor.Next(ctx) {
+		var item model.Annotation
+		if err := cursor.Decode(&item); err != nil {
+			return nil, apperrors.NewAppError("BAD_REQUEST", "failed to decode annotation")
+		}
+		results = append(results, item)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to read annotations")
+	}
+
+	return results, nil
 }
 
 func (r *annotationsRepository) Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error) {
@@ -92,7 +122,7 @@ func (r *annotationsRepository) Nearby(ctx context.Context, lat float64, lng flo
 func (r *annotationsRepository) UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error) {
 	oid, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return model.Annotation{}, apperrors.NewAppError("BAD_REQUEST", "invalid annotation id" + err.Error())
+		return model.Annotation{}, apperrors.NewAppError("BAD_REQUEST", "invalid annotation id")
 	}
 
 	filter := bson.M{"_id": oid, "author_id": authorID}

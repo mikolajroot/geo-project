@@ -17,3 +17,7 @@ type PatchAnnotationRequest struct {
 	ID   string `param:"id" validate:"required,len=24,hexadecimal"`
 	Text string `json:"text" validate:"required,min=1"`
 }
+
+type ListAnnotationsRequest struct {
+	Layers string `query:"layers" validate:"required"`
+}

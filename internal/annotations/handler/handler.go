@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"geo-project/internal/annotations/model"
@@ -53,6 +54,33 @@ func (h *annotationsHandler) CreateAnnotation(c *echo.Context) error {
 		Location:  annotation.Location,
 		CreatedAt: annotation.CreatedAt,
 	})
+}
+
+func (h *annotationsHandler) ListAnnotations(c *echo.Context) error {
+	var req ListAnnotationsRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	layerIDs, err := parseLayerIDs(req.Layers)
+	if err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "invalid layers query param")
+	}
+
+	annotations, err := h.service.ListByLayerIDs(c.Request().Context(), layerIDs)
+	if err != nil {
+		return err
+	}
+
+	response := AnnotationsResponse{Data: make([]CreateAnnotationResponse, 0, len(annotations))}
+	for _, annotation := range annotations {
+		response.Data = append(response.Data, createAnnotationToResponse(annotation))
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *annotationsHandler) HandleNearby(c *echo.Context) error {
@@ -107,6 +135,42 @@ func (h *annotationsHandler) PatchAnnotation(c *echo.Context) error {
 		Location:  annotation.Location,
 		CreatedAt: annotation.CreatedAt,
 	})
+}
+
+func parseLayerIDs(raw string) ([]int32, error) {
+	parts := strings.Split(raw, ",")
+	ids := make([]int32, 0, len(parts))
+
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			return nil, strconv.ErrSyntax
+		}
+
+		id, err := strconv.ParseInt(item, 10, 32)
+		if err != nil || id <= 0 {
+			return nil, strconv.ErrSyntax
+		}
+
+		ids = append(ids, int32(id))
+	}
+
+	if len(ids) == 0 {
+		return nil, strconv.ErrSyntax
+	}
+
+	return ids, nil
+}
+
+func createAnnotationToResponse(annotation model.Annotation) CreateAnnotationResponse {
+	return CreateAnnotationResponse{
+		ID:        annotation.ID.Hex(),
+		AuthorID:  annotation.AuthorID,
+		LayerID:   annotation.LayerID,
+		Text:      annotation.Text,
+		Location:  annotation.Location,
+		CreatedAt: annotation.CreatedAt,
+	}
 }
 
 func nearbyAnnotationToResponse(annotation model.NearbyAnnotation) NearbyAnnotationResponse {

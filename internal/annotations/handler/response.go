@@ -24,3 +24,7 @@ type NearbyAnnotationResponse struct {
 type NearbyAnnotationsResponse struct {
 	Data []NearbyAnnotationResponse `json:"data"`
 }
+
+type AnnotationsResponse struct {
+	Data []CreateAnnotationResponse `json:"data"`
+}

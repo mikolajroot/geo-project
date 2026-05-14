@@ -22,6 +22,7 @@ type CreateAnnotationParams struct {
 
 type AnnotationsService interface {
 	CreateAnnotation(ctx context.Context, params CreateAnnotationParams) (model.Annotation, error)
+	ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error)
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	PatchAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 }
@@ -49,6 +50,10 @@ func (s *annotationsService) CreateAnnotation(ctx context.Context, params Create
 	}
 
 	return s.repo.CreateAnnotation(ctx, annotation)
+}
+
+func (s *annotationsService) ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error) {
+	return s.repo.ListByLayerIDs(ctx, layerIDs)
 }
 
 func (s *annotationsService) Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error) {
