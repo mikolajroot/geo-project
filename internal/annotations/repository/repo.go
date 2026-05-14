@@ -17,6 +17,7 @@ type AnnotationsRepository interface {
 	ListByFeatureIDs(ctx context.Context, featureIDs []int32) ([]model.Annotation, error)
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
+	DeleteAnnotation(ctx context.Context, id string, authorID int32) error
 }
 
 type annotationsRepository struct {
@@ -146,4 +147,21 @@ func (r *annotationsRepository) UpdateAnnotationText(ctx context.Context, id str
 	}
 
 	return annotation, nil
+}
+
+func (r *annotationsRepository) DeleteAnnotation(ctx context.Context, id string, authorID int32) error {
+	uid, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "invalid annotation id")
+	}
+
+	filter := bson.M{"_id": uid, "author_id": authorID}
+	res, err := r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "failed to delete annotation")
+	}
+	if res.DeletedCount == 0 {
+		return apperrors.NewAppError("FORBIDDEN", "you are not the author of this annotation")
+	}
+	return nil
 }

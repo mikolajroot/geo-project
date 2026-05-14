@@ -21,3 +21,7 @@ type PatchAnnotationRequest struct {
 type ListAnnotationsRequest struct {
 	Features string `query:"features" validate:"required"`
 }
+
+type DeleteAnnotationRequest struct {
+	ID string `param:"id" validate:"required,len=24,hexadecimal"`
+}

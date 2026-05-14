@@ -56,6 +56,27 @@ func (h *annotationsHandler) CreateAnnotation(c *echo.Context) error {
 	})
 }
 
+func (h *annotationsHandler) DeleteAnnotation(c *echo.Context) error {
+	var req DeleteAnnotationRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
+	if err := h.service.DeleteAnnotation(c.Request().Context(), req.ID, cl.UserID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (h *annotationsHandler) ListAnnotations(c *echo.Context) error {
 	var req ListAnnotationsRequest
 	if err := c.Bind(&req); err != nil {
