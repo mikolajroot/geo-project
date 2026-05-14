@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"geo-project/internal/annotations/model"
 	"geo-project/internal/annotations/service"
@@ -74,6 +75,38 @@ func (h *annotationsHandler) HandleNearby(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func (h *annotationsHandler) PatchAnnotation(c *echo.Context) error {
+	var req PatchAnnotationRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	idStr := strings.TrimSpace(req.ID)
+	idStr = strings.Trim(idStr, "\"")
+
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
+	annotation, err := h.service.PatchAnnotationText(c.Request().Context(), idStr, cl.UserID, req.Text)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, CreateAnnotationResponse{
+		ID:        annotation.ID.Hex(),
+		AuthorID:  annotation.AuthorID,
+		LayerID:   annotation.LayerID,
+		Text:      annotation.Text,
+		Location:  annotation.Location,
+		CreatedAt: annotation.CreatedAt,
+	})
 }
 
 func nearbyAnnotationToResponse(annotation model.NearbyAnnotation) NearbyAnnotationResponse {

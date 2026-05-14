@@ -20,9 +20,6 @@ func RegisterAnnotationsRoutes(api *echo.Group, jwtSecret string, db *mongo.Data
 	annotations.Use(midleware.JWTAuthMiddleware(jwtSecret))
 
 	annotations.POST("", h.CreateAnnotation)
+	annotations.PATCH("/:id", h.PatchAnnotation)
 	annotations.GET("/nearby", h.HandleNearby)
-	// annotations.GET("", h.ListAnnotations)
-	// annotations.GET("/:id", h.GetAnnotation)
-	// annotations.PUT("/:id", h.UpdateAnnotation)
-	// annotations.DELETE("/:id", h.DeleteAnnotation)
 }

@@ -15,6 +15,7 @@ import (
 type AnnotationsRepository interface {
 	CreateAnnotation(ctx context.Context, annotation model.Annotation) (model.Annotation, error)
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
+	UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 }
 
 type annotationsRepository struct {
@@ -86,4 +87,33 @@ func (r *annotationsRepository) Nearby(ctx context.Context, lat float64, lng flo
 	}
 
 	return results, nil
+}
+
+func (r *annotationsRepository) UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error) {
+	oid, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return model.Annotation{}, apperrors.NewAppError("BAD_REQUEST", "invalid annotation id" + err.Error())
+	}
+
+	filter := bson.M{"_id": oid, "author_id": authorID}
+	update := bson.M{
+		"$set": bson.M{
+			"text": text,
+		},
+	}
+
+	result, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return model.Annotation{}, apperrors.NewAppError("BAD_REQUEST", "failed to update annotation")
+	}
+	if result.MatchedCount == 0 {
+		return model.Annotation{}, apperrors.NewAppError("FORBIDDEN", "you are not the author of this annotation")
+	}
+
+	var annotation model.Annotation
+	if err := r.collection.FindOne(ctx, filter).Decode(&annotation); err != nil {
+		return model.Annotation{}, apperrors.NewAppError("BAD_REQUEST", "failed to load updated annotation")
+	}
+
+	return annotation, nil
 }

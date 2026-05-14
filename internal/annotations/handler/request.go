@@ -12,3 +12,8 @@ type NearbyAnnotationsRequest struct {
 	Lng         *float64 `query:"lng" validate:"required,gte=-180,lte=180"`
 	MaxDistance *float64 `query:"max_distance" validate:"required,gt=0"`
 }
+
+type PatchAnnotationRequest struct {
+	ID   string `param:"id" validate:"required,len=24,hexadecimal"`
+	Text string `json:"text" validate:"required,min=1"`
+}

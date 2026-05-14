@@ -49,9 +49,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	e.GET("/health", func(c *echo.Context) error {
-		var result int
-		_, err := goquDB.Select(1).ScanVal(&result)
-		if err != nil {
+		if err := sqlDB.Ping(); err != nil {
 			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "db_error"})
 		}
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
