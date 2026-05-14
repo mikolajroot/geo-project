@@ -14,7 +14,7 @@ type MongoGeoJSON struct {
 type Annotation struct {
 	ID        bson.ObjectID `bson:"_id,omitempty"`
 	AuthorID  int32         `bson:"author_id"`
-	LayerID   int32         `bson:"layer_id"`
+	FeatureID int32         `bson:"feature_id"`
 	Text      string        `bson:"text"`
 	Location  MongoGeoJSON  `bson:"location"`
 	CreatedAt time.Time     `bson:"created_at"`
@@ -23,7 +23,7 @@ type Annotation struct {
 type NearbyAnnotation struct {
 	ID             bson.ObjectID `bson:"_id,omitempty"`
 	AuthorID       int32         `bson:"author_id"`
-	LayerID        int32         `bson:"layer_id"`
+	FeatureID      int32         `bson:"feature_id"`
 	Text           string        `bson:"text"`
 	Location       MongoGeoJSON  `bson:"location"`
 	CreatedAt      time.Time     `bson:"created_at"`

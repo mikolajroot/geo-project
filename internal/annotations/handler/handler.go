@@ -36,11 +36,11 @@ func (h *annotationsHandler) CreateAnnotation(c *echo.Context) error {
 	}
 
 	annotation, err := h.service.CreateAnnotation(c.Request().Context(), service.CreateAnnotationParams{
-		AuthorID: cl.UserID,
-		LayerID:  req.LayerID,
-		Text:     req.Text,
-		Lng:      *req.Lng,
-		Lat:      *req.Lat,
+		AuthorID:  cl.UserID,
+		FeatureID: req.FeatureID,
+		Text:      req.Text,
+		Lng:       *req.Lng,
+		Lat:       *req.Lat,
 	})
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (h *annotationsHandler) CreateAnnotation(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, CreateAnnotationResponse{
 		ID:        annotation.ID.Hex(),
 		AuthorID:  annotation.AuthorID,
-		LayerID:   annotation.LayerID,
+		FeatureID: annotation.FeatureID,
 		Text:      annotation.Text,
 		Location:  annotation.Location,
 		CreatedAt: annotation.CreatedAt,
@@ -65,12 +65,12 @@ func (h *annotationsHandler) ListAnnotations(c *echo.Context) error {
 		return err
 	}
 
-	layerIDs, err := parseLayerIDs(req.Layers)
+	featureIDs, err := parseFeatureIDs(req.Features)
 	if err != nil {
-		return apperrors.NewAppError("BAD_REQUEST", "invalid layers query param")
+		return apperrors.NewAppError("BAD_REQUEST", "invalid features query param")
 	}
 
-	annotations, err := h.service.ListByLayerIDs(c.Request().Context(), layerIDs)
+	annotations, err := h.service.ListByFeatureIDs(c.Request().Context(), featureIDs)
 	if err != nil {
 		return err
 	}
@@ -130,14 +130,14 @@ func (h *annotationsHandler) PatchAnnotation(c *echo.Context) error {
 	return c.JSON(http.StatusOK, CreateAnnotationResponse{
 		ID:        annotation.ID.Hex(),
 		AuthorID:  annotation.AuthorID,
-		LayerID:   annotation.LayerID,
+		FeatureID: annotation.FeatureID,
 		Text:      annotation.Text,
 		Location:  annotation.Location,
 		CreatedAt: annotation.CreatedAt,
 	})
 }
 
-func parseLayerIDs(raw string) ([]int32, error) {
+func parseFeatureIDs(raw string) ([]int32, error) {
 	parts := strings.Split(raw, ",")
 	ids := make([]int32, 0, len(parts))
 
@@ -166,7 +166,7 @@ func createAnnotationToResponse(annotation model.Annotation) CreateAnnotationRes
 	return CreateAnnotationResponse{
 		ID:        annotation.ID.Hex(),
 		AuthorID:  annotation.AuthorID,
-		LayerID:   annotation.LayerID,
+		FeatureID: annotation.FeatureID,
 		Text:      annotation.Text,
 		Location:  annotation.Location,
 		CreatedAt: annotation.CreatedAt,
@@ -177,7 +177,7 @@ func nearbyAnnotationToResponse(annotation model.NearbyAnnotation) NearbyAnnotat
 	return NearbyAnnotationResponse{
 		ID:             annotation.ID.Hex(),
 		AuthorID:       annotation.AuthorID,
-		LayerID:        annotation.LayerID,
+		FeatureID:      annotation.FeatureID,
 		Text:           annotation.Text,
 		Location:       annotation.Location,
 		CreatedAt:      annotation.CreatedAt,

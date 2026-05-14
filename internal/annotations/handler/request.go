@@ -1,10 +1,10 @@
 package handler
 
 type CreateAnnotationRequest struct {
-	LayerID int32    `json:"layer_id" validate:"required,gt=0"`
-	Text    string   `json:"text" validate:"required,min=1"`
-	Lng     *float64 `json:"lng" validate:"required,gte=-180,lte=180"`
-	Lat     *float64 `json:"lat" validate:"required,gte=-90,lte=90"`
+	FeatureID int32    `json:"feature_id" validate:"required,gt=0"`
+	Text      string   `json:"text" validate:"required,min=1"`
+	Lng       *float64 `json:"lng" validate:"required,gte=-180,lte=180"`
+	Lat       *float64 `json:"lat" validate:"required,gte=-90,lte=90"`
 }
 
 type NearbyAnnotationsRequest struct {
@@ -19,5 +19,5 @@ type PatchAnnotationRequest struct {
 }
 
 type ListAnnotationsRequest struct {
-	Layers string `query:"layers" validate:"required"`
+	Features string `query:"features" validate:"required"`
 }

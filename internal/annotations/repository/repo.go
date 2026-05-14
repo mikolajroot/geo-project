@@ -14,7 +14,7 @@ import (
 
 type AnnotationsRepository interface {
 	CreateAnnotation(ctx context.Context, annotation model.Annotation) (model.Annotation, error)
-	ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error)
+	ListByFeatureIDs(ctx context.Context, featureIDs []int32) ([]model.Annotation, error)
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 }
@@ -54,10 +54,10 @@ func (r *annotationsRepository) CreateAnnotation(ctx context.Context, annotation
 	return annotation, nil
 }
 
-func (r *annotationsRepository) ListByLayerIDs(ctx context.Context, layerIDs []int32) ([]model.Annotation, error) {
+func (r *annotationsRepository) ListByFeatureIDs(ctx context.Context, featureIDs []int32) ([]model.Annotation, error) {
 	filter := bson.M{
-		"layer_id": bson.M{
-			"$in": layerIDs,
+		"feature_id": bson.M{
+			"$in": featureIDs,
 		},
 	}
 
