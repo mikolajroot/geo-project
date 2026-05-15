@@ -13,6 +13,7 @@ import (
 type RevisionRepository interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
 	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
+	AddComment(ctx context.Context, revisionID bson.ObjectID, comment *model.Comment) error
 }
 
 func (r *revisionsRepository) CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error) {
@@ -38,6 +39,20 @@ func (r *revisionsRepository) ListByFeatureID(ctx context.Context, featureID int
 		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to decode revisions")
 	}
 	return revisions, nil
+}
+
+func (r *revisionsRepository) AddComment(ctx context.Context, revisionID bson.ObjectID, comment *model.Comment) error {
+	result, err := r.collection.UpdateOne(ctx,
+		bson.M{"_id": revisionID},
+		bson.M{"$push": bson.M{"comments": comment}},
+	)
+	if err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "failed to add comment to revision" + err.Error())
+	}
+	if result.MatchedCount == 0 {
+		return apperrors.NewAppError("NOT_FOUND", "revision not found")
+	}
+	return nil
 }
 
 type revisionsRepository struct {

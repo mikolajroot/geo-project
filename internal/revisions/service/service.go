@@ -9,11 +9,14 @@ import (
 	"geo-project/internal/revisions/repository"
 
 	apperrors "geo-project/pkg/errors"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type RevisionService interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
 	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
+	AddComment(ctx context.Context, revisionID string, authorID int32, text string) error
 }
 
 type revisionService struct {
@@ -37,6 +40,25 @@ func (s *revisionService) ListByFeatureID(ctx context.Context, featureID int32) 
 		return nil, apperrors.NewAppError("BAD_REQUEST", "feature_id must be greater than 0")
 	}
 	return s.repo.ListByFeatureID(ctx, featureID)
+}
+
+func (s *revisionService) AddComment(ctx context.Context, revisionID string, authorID int32, text string) error {
+	if len(text) < 5 || len(text) > 500 {
+		return apperrors.NewAppError("BAD_REQUEST", "comment text must be between 5 and 500 characters")
+	}
+
+	oid, err := bson.ObjectIDFromHex(revisionID)
+	if err != nil {
+		return apperrors.NewAppError("BAD_REQUEST", "invalid revision id")
+	}
+
+	comment := &model.Comment{
+		AuthorID: authorID,
+		Text:     text,
+	}
+	comment.Prepare()
+
+	return s.repo.AddComment(ctx, oid, comment)
 }
 
 func verifyFeatureExists(featureID int32) error {

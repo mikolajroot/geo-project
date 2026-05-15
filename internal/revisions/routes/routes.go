@@ -20,4 +20,5 @@ func RegisterRevisionsRoutes(api *echo.Group, jwtSecret string, db *mongo.Databa
 
 	revisions.POST("", h.CreateRevision)
 	revisions.GET("", h.ListByFeatureID)
+	revisions.POST("/:id/comments", h.AddComment)
 }

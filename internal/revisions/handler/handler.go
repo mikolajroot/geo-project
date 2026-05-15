@@ -88,3 +88,27 @@ func (h *revisionHandler) ListByFeatureID(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses)
 }
+
+func (h *revisionHandler) AddComment(c *echo.Context) error {
+	var req AddCommentRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
+	err := h.service.AddComment(c.Request().Context(), req.ID, cl.UserID, req.Text)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, AddCommentResponse{
+		Message: "comment added successfully",
+	})
+}
