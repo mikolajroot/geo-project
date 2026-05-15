@@ -14,6 +14,7 @@ import (
 
 	"geo-project/internal/annotations/routes"
 	seeder "geo-project/internal/annotations/seed"
+	revisionRoutes "geo-project/internal/revisions/routes"
 
 	"github.com/go-playground/validator/v10"
 
@@ -91,8 +92,9 @@ func main() {
 	api := e.Group("/api/v1")
 
 	routes.RegisterAnnotationsRoutes(api, jwtSecret, db)
+	revisionRoutes.RegisterRevisionsRoutes(api, jwtSecret, db)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT)
 	defer stop()
 
 	port := os.Getenv("PORT")

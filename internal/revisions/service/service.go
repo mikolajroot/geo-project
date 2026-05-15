@@ -1,0 +1,53 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"geo-project/internal/revisions/model"
+	"geo-project/internal/revisions/repository"
+
+	apperrors "geo-project/pkg/errors"
+)
+
+type RevisionService interface {
+	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
+}
+
+type revisionService struct {
+	repo repository.RevisionRepository
+}
+
+func NewRevisionService(repo repository.RevisionRepository) RevisionService {
+	return &revisionService{repo: repo}
+}
+
+func (s *revisionService) CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error) {
+	if err := verifyFeatureExists(revision.FeatureID); err != nil {
+		return &model.Revision{}, err
+	}
+	revision.Prepare()
+	return s.repo.CreateRevision(ctx, revision)
+}
+
+func verifyFeatureExists(featureID int32) error {
+
+	url := fmt.Sprintf("http://svc-features:8082/api/v1/features/%d", featureID)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return apperrors.NewAppError("INTERNAL_ERROR", "failed to communicate with features service")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return apperrors.NewAppError("NOT_FOUND", fmt.Sprintf("feature with ID %d does not exist", featureID))
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return apperrors.NewAppError("INTERNAL_ERROR", "failed to verify feature existence")
+	}
+
+	return nil
+}

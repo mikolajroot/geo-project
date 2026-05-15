@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"geo-project/internal/annotations/routes"
+	"geo-project/internal/revisions/routes"
 
 	"github.com/go-playground/validator/v10"
 
@@ -88,9 +88,9 @@ func main() {
 
 	api := e.Group("/api/v1")
 
-	routes.RegisterAnnotationsRoutes(api, jwtSecret, db)
+	routes.RegisterRevisionsRoutes(api, jwtSecret, db)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT)
 	defer stop()
 
 	port := os.Getenv("PORT")
@@ -100,7 +100,7 @@ func main() {
 	s := http.Server{Addr: fmt.Sprintf(":%s", port), Handler: e}
 
 	go func() {
-		log.Printf("Annotations server listening on %s", s.Addr)
+		log.Printf("Revisions server listening on %s", s.Addr)
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("Server error: %v", err)
 		}

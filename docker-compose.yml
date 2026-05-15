@@ -187,7 +187,37 @@ services:
       - db_user
       - db_password
       - secret_key
-
+  svc-revisions:
+    build: 
+      context: .
+      args:
+        SERVICE_NAME: svc-revisions
+    environment:
+      - MONGO_URI=mongodb://admin:secret@mongodb:27017/
+      - MONGO_DB_NAME=geo_annotations
+      - PORT=8085
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SEED_DB=${SEED_DB}
+      - SEED_DB_COUNT=${SEED_DB_COUNT}
+    expose:
+      - "8085"
+    depends_on:
+      mongodb:
+        condition: service_started
+      svc-features:
+        condition: service_healthy
+    networks:
+      - app-net
+      - db-net
+      - proxy-net
+    secrets:
+      - db_user
+      - db_password
+      - secret_key
   nginx:
     image: nginx:alpine
     ports:
