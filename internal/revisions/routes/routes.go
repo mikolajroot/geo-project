@@ -19,4 +19,5 @@ func RegisterRevisionsRoutes(api *echo.Group, jwtSecret string, db *mongo.Databa
 	revisions.Use(midleware.JWTAuthMiddleware(jwtSecret))
 
 	revisions.POST("", h.CreateRevision)
+	revisions.GET("", h.ListByFeatureID)
 }

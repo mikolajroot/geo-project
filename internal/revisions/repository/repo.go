@@ -12,6 +12,7 @@ import (
 
 type RevisionRepository interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
+	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
 }
 
 func (r *revisionsRepository) CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error) {
@@ -23,6 +24,20 @@ func (r *revisionsRepository) CreateRevision(ctx context.Context, revision *mode
 		revision.ID = oid
 	}
 	return revision, nil
+}
+
+func (r *revisionsRepository) ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error) {
+	cursor, err := r.collection.Find(ctx, bson.M{"feature_id": featureID})
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to fetch revisions")
+	}
+	defer cursor.Close(ctx)
+
+	var revisions []*model.Revision
+	if err := cursor.All(ctx, &revisions); err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to decode revisions")
+	}
+	return revisions, nil
 }
 
 type revisionsRepository struct {

@@ -54,3 +54,37 @@ func (h *revisionHandler) CreateRevision(c *echo.Context) error {
 		UpdatedAt: created.UpdatedAt,
 	})
 }
+
+func (h *revisionHandler) ListByFeatureID(c *echo.Context) error {
+	var req ListRevisionsRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	revisions, err := h.service.ListByFeatureID(c.Request().Context(), req.FeatureID)
+	if err != nil {
+		return err
+	}
+
+	if revisions == nil {
+		revisions = []*model.Revision{}
+	}
+
+	responses := make([]ListRevisionResponse, len(revisions))
+	for i, rev := range revisions {
+		responses[i] = ListRevisionResponse{
+			ID:        rev.ID.Hex(),
+			FeatureID: rev.FeatureID,
+			AuthorID:  rev.AuthorID,
+			ChangeLog: rev.ChangeLog,
+			Status:    rev.Status,
+			CreatedAt: rev.CreatedAt,
+			UpdatedAt: rev.UpdatedAt,
+		}
+	}
+
+	return c.JSON(http.StatusOK, responses)
+}

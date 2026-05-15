@@ -13,6 +13,7 @@ import (
 
 type RevisionService interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
+	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
 }
 
 type revisionService struct {
@@ -29,6 +30,13 @@ func (s *revisionService) CreateRevision(ctx context.Context, revision *model.Re
 	}
 	revision.Prepare()
 	return s.repo.CreateRevision(ctx, revision)
+}
+
+func (s *revisionService) ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error) {
+	if featureID <= 0 {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "feature_id must be greater than 0")
+	}
+	return s.repo.ListByFeatureID(ctx, featureID)
 }
 
 func verifyFeatureExists(featureID int32) error {
