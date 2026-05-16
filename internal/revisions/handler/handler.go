@@ -112,3 +112,38 @@ func (h *revisionHandler) AddComment(c *echo.Context) error {
 		Message: "comment added successfully",
 	})
 }
+
+func (h *revisionHandler) GetRevisionByID(c *echo.Context) error {
+	var req GetRevisionRequest
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	revision, err := h.service.GetByID(c.Request().Context(), req.ID)
+	if err != nil {
+		return err
+	}
+
+	comments := make([]CommentResponse, len(revision.Comments))
+	for i, comment := range revision.Comments {
+		comments[i] = CommentResponse{
+			AuthorID:  comment.AuthorID,
+			Text:      comment.Text,
+			CreatedAt: comment.CreatedAt,
+		}
+	}
+
+	return c.JSON(http.StatusOK, GetRevisionResponse{
+		ID:        revision.ID.Hex(),
+		FeatureID: revision.FeatureID,
+		AuthorID:  revision.AuthorID,
+		ChangeLog: revision.ChangeLog,
+		Status:    revision.Status,
+		Comments:  comments,
+		CreatedAt: revision.CreatedAt,
+		UpdatedAt: revision.UpdatedAt,
+	})
+}

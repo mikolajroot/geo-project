@@ -17,6 +17,7 @@ type RevisionService interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
 	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
 	AddComment(ctx context.Context, revisionID string, authorID int32, text string) error
+	GetByID(ctx context.Context, revisionID string) (*model.Revision, error)
 }
 
 type revisionService struct {
@@ -59,6 +60,14 @@ func (s *revisionService) AddComment(ctx context.Context, revisionID string, aut
 	comment.Prepare()
 
 	return s.repo.AddComment(ctx, oid, comment)
+}
+
+func (s *revisionService) GetByID(ctx context.Context, revisionID string) (*model.Revision, error) {
+	oid, err := bson.ObjectIDFromHex(revisionID)
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "invalid revision id")
+	}
+	return s.repo.GetByID(ctx, oid)
 }
 
 func verifyFeatureExists(featureID int32) error {

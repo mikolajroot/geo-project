@@ -13,3 +13,7 @@ type AddCommentRequest struct {
 	ID   string `param:"id" validate:"required,len=24,hexadecimal"`
 	Text string `json:"text" validate:"required,min=5,max=500"`
 }
+
+type GetRevisionRequest struct {
+	ID string `param:"id" validate:"required,len=24,hexadecimal"`
+}

@@ -14,6 +14,7 @@ type RevisionRepository interface {
 	CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error)
 	ListByFeatureID(ctx context.Context, featureID int32) ([]*model.Revision, error)
 	AddComment(ctx context.Context, revisionID bson.ObjectID, comment *model.Comment) error
+	GetByID(ctx context.Context, revisionID bson.ObjectID) (*model.Revision, error)
 }
 
 func (r *revisionsRepository) CreateRevision(ctx context.Context, revision *model.Revision) (*model.Revision, error) {
@@ -47,12 +48,24 @@ func (r *revisionsRepository) AddComment(ctx context.Context, revisionID bson.Ob
 		bson.M{"$push": bson.M{"comments": comment}},
 	)
 	if err != nil {
-		return apperrors.NewAppError("BAD_REQUEST", "failed to add comment to revision" + err.Error())
+		return apperrors.NewAppError("BAD_REQUEST", "failed to add comment to revision"+err.Error())
 	}
 	if result.MatchedCount == 0 {
 		return apperrors.NewAppError("NOT_FOUND", "revision not found")
 	}
 	return nil
+}
+
+func (r *revisionsRepository) GetByID(ctx context.Context, revisionID bson.ObjectID) (*model.Revision, error) {
+	var revision model.Revision
+	err := r.collection.FindOne(ctx, bson.M{"_id": revisionID}).Decode(&revision)
+	if err == mongo.ErrNoDocuments {
+		return nil, apperrors.NewAppError("NOT_FOUND", "revision not found")
+	}
+	if err != nil {
+		return nil, apperrors.NewAppError("BAD_REQUEST", "failed to fetch revision")
+	}
+	return &revision, nil
 }
 
 type revisionsRepository struct {
