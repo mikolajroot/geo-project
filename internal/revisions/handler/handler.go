@@ -44,7 +44,6 @@ func (h *revisionHandler) CreateRevision(c *echo.Context) error {
 		FeatureID: created.FeatureID,
 		AuthorID:  created.AuthorID,
 		ChangeLog: created.ChangeLog,
-		Status:    created.Status,
 		CreatedAt: created.CreatedAt,
 		UpdatedAt: created.UpdatedAt,
 	})
@@ -75,7 +74,6 @@ func (h *revisionHandler) ListByFeatureID(c *echo.Context) error {
 			FeatureID: rev.FeatureID,
 			AuthorID:  rev.AuthorID,
 			ChangeLog: rev.ChangeLog,
-			Status:    rev.Status,
 			CreatedAt: rev.CreatedAt,
 			UpdatedAt: rev.UpdatedAt,
 		}
@@ -136,7 +134,6 @@ func (h *revisionHandler) GetRevisionByID(c *echo.Context) error {
 		FeatureID: revision.FeatureID,
 		AuthorID:  revision.AuthorID,
 		ChangeLog: revision.ChangeLog,
-		Status:    revision.Status,
 		Comments:  comments,
 		CreatedAt: revision.CreatedAt,
 		UpdatedAt: revision.UpdatedAt,

@@ -18,7 +18,6 @@ type Revision struct {
 	AuthorID  int32         `bson:"author_id" validate:"required"`
 	ChangeLog string        `bson:"change_log" validate:"required,min=10"`
 	Comments  []Comment     `bson:"comments"`
-	Status    string        `bson:"status"`
 	CreatedAt time.Time     `bson:"created_at"`
 	UpdatedAt time.Time     `bson:"updated_at"`
 }
@@ -26,7 +25,6 @@ type Revision struct {
 func (r *Revision) Prepare() {
 	r.CreatedAt = time.Now().UTC()
 	r.UpdatedAt = time.Now().UTC()
-	r.Status = "PENDING_REVIEW"
 	if r.Comments == nil {
 		r.Comments = make([]Comment, 0)
 	}
