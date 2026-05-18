@@ -11,12 +11,13 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type FeatureService interface {
 	CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
 	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
-	DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32) error
+	DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32, authToken string) error
 	GetFeature(ctx context.Context, featureID int32) (*model.Feature, error)
 	GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error)
 }
@@ -68,7 +69,7 @@ func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, own
 	return feature, nil
 }
 
-func (s *featureService) DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32) error {
+func (s *featureService) DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32, authToken string) error {
 	feature, err := s.repo.GetFeatureByIDWithOwner(featureID)
 	if err != nil {
 		return err
@@ -76,6 +77,15 @@ func (s *featureService) DeleteFeature(ctx context.Context, featureID int32, own
 
 	if feature.Owner.ExternalID != ownerExternalID {
 		return apperrors.NewAppError("FORBIDDEN", "you are not the owner of this feature")
+	}
+
+	hasAnnotations, err := checkFeatureHasAnnotations(ctx, featureID, authToken)
+	if err != nil {
+		return err
+	}
+
+	if hasAnnotations {
+		return apperrors.NewAppError("CONFLICT", "cannot delete feature with existing annotations")
 	}
 
 	return s.repo.DeleteFeatureByID(featureID)
@@ -198,4 +208,38 @@ func createRevisionInMongo(featureID int32, authorID int32, changeLog string) er
 	}
 
 	return nil
+}
+
+
+
+func checkFeatureHasAnnotations(ctx context.Context, featureID int32, authToken string) (bool, error) {
+
+	url := fmt.Sprintf("http://svc-annotations:8084/api/v1/annotations?features=%d", featureID)
+	
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Set("Authorization", authToken)
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, apperrors.NewAppError("INTERNAL_ERROR", "failed to contact annotations service")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, apperrors.NewAppError("INTERNAL_ERROR", "annotations service returned an error")
+	}
+
+	var result struct {
+		Data []any `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return false, err
+	}
+
+	return len(result.Data) > 0, nil
 }

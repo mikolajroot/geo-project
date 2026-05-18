@@ -149,7 +149,9 @@ func (h *featureHandler) HandleDeleteFeature(c *echo.Context) error {
 		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
 	}
 
-	if err := h.service.DeleteFeature(c.Request().Context(), req.ID, cl.UserID); err != nil {
+	authToken := c.Request().Header.Get("Authorization")
+
+	if err := h.service.DeleteFeature(c.Request().Context(), req.ID, cl.UserID, authToken); err != nil {
 		return err
 	}
 

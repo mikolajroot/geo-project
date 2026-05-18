@@ -25,7 +25,7 @@ func RegisterFeaturesRoutes(api *echo.Group, gormDB *gorm.DB, jwtSecret string) 
 	api.POST("/features", featureHandler.HandleCreateFeature, midleware.JWTAuthMiddleware(jwtSecret))
 	api.GET("/features/layer/:layer_id", featureHandler.HandleGetFeaturesByLayer)
 	api.GET("/features/:id", featureHandler.HandleGetFeature)
-	api.PUT("/features/:id", featureHandler.HandleUpdateFeature, midleware.JWTAuthMiddleware(jwtSecret))
+	api.PATCH("/features/:id", featureHandler.HandleUpdateFeature, midleware.JWTAuthMiddleware(jwtSecret))
 	api.DELETE("/features/:id", featureHandler.HandleDeleteFeature, midleware.JWTAuthMiddleware(jwtSecret))
 
 	if os.Getenv("SEED_DB") == "true" {
