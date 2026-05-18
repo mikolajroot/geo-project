@@ -10,11 +10,15 @@
 │
 ├── internal/                   # Kod prywatny poszczególnych mikroserwisów
 │   ├── analytics/              # Logika domenowa serwisu T1
-│   ├── layers/                # Logika domenowa serwisu T2
+│   ├── layers/                 # Logika domenowa serwisu T2
 │   ├── features/               # Logika domenowa serwisu T3
 │   ├── auth/                   # Logika domenowa serwisu T4
 │   ├── annotations/                 # Logika domenowa serwisu T5
 │   └── revisions/              # Logika domenowa serwisu T6
+│
+├── nginx/                      # Przechowuje nginx.conf             
+|
+│
 │
 ├── pkg/                        # WSPÓŁDZIELONY KOD
 │   ├── errors/                 # Ujednolicony format błędów
