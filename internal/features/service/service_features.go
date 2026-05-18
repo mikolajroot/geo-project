@@ -56,6 +56,18 @@ func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int3
 }
 
 func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string, authToken string) (*model.Feature, error) {
+	
+	existingFeature, err := s.repo.GetFeatureByIDWithOwner(featureID)
+	if err != nil {
+		return nil, err
+	}
+
+	if geometry != nil {
+		if err := verifyGeometryTypeWithLayerSvc(existingFeature.LayerID, *geometry); err != nil {
+			return nil, err
+		}
+	}
+
 	feature, err := s.repo.UpdateFeatureByIDAndOwner(featureID, ownerExternalID, geometry, properties)
 	if err != nil {
 		return nil, err
@@ -137,9 +149,14 @@ func verifyGeometryTypeWithLayerSvc(layerID int32, geometry string) error {
 
 	var layerData struct {
 		GeometryType string `json:"geometry_type"`
+		Status       string `json:"status"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&layerData); err != nil {
 		return apperrors.NewAppError("INTERNAL_ERROR", "failed to decode layer data")
+	}
+
+	if strings.EqualFold(layerData.Status, "archived") {
+		return apperrors.NewAppError("CONFLICT", "target layer is archived")
 	}
 
 	var geom struct {
@@ -212,12 +229,10 @@ func createRevisionInMongo(featureID int32, changeLog string, authToken string) 
 	return nil
 }
 
-
-
 func checkFeatureHasAnnotations(ctx context.Context, featureID int32, authToken string) (bool, error) {
 
 	url := fmt.Sprintf("http://svc-annotations:8084/api/v1/annotations?features=%d", featureID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return false, err
