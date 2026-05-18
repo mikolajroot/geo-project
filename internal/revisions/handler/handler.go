@@ -28,14 +28,9 @@ func (h *revisionHandler) CreateRevision(c *echo.Context) error {
 		return err
 	}
 
-	cl, ok := midleware.GetClaims(c)
-	if !ok || cl.UserID <= 0 {
-		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
-	}
-
 	revision := &model.Revision{
 		FeatureID: req.FeatureID,
-		AuthorID:  cl.UserID,
+		AuthorID:  req.AuthorID,
 		ChangeLog: req.ChangeLog,
 	}
 

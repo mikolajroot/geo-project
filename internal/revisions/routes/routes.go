@@ -15,10 +15,11 @@ func RegisterRevisionsRoutes(api *echo.Group, jwtSecret string, db *mongo.Databa
 	svc := service.NewRevisionService(repo)
 	h := handler.NewRevisionHandler(svc)
 
+	api.POST("/revisions", h.CreateRevision)
+
 	revisions := api.Group("/revisions")
 	revisions.Use(midleware.JWTAuthMiddleware(jwtSecret))
 
-	revisions.POST("", h.CreateRevision)
 	revisions.GET("", h.ListByFeatureID)
 	revisions.GET("/:id", h.GetRevisionByID)
 	revisions.POST("/:id/comments", h.AddComment)

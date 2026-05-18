@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -54,7 +55,17 @@ func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int3
 }
 
 func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error) {
-	return s.repo.UpdateFeatureByIDAndOwner(featureID, ownerExternalID, geometry, properties)
+	feature, err := s.repo.UpdateFeatureByIDAndOwner(featureID, ownerExternalID, geometry, properties)
+	if err != nil {
+		return nil, err
+	}
+
+	changeLog := buildChangeLog(geometry, properties)
+	if err := createRevisionInMongo(featureID, ownerExternalID, changeLog); err != nil {
+		fmt.Printf("warning: failed to create revision for feature %d: %v\n", featureID, err)
+	}
+
+	return feature, nil
 }
 
 func (s *featureService) DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32) error {
@@ -140,6 +151,50 @@ func verifyGeometryTypeWithLayerSvc(layerID int32, geometry string) error {
 			"BAD_REQUEST",
 			fmt.Sprintf("geometry type mismatch: layer accepts only %s, but you provided %s", layerData.GeometryType, geom.Type),
 		)
+	}
+
+	return nil
+}
+
+func buildChangeLog(geometry *string, properties *string) string {
+	var changes []string
+	if geometry != nil {
+		changes = append(changes, "updated geometry")
+	}
+	if properties != nil {
+		changes = append(changes, "updated properties")
+	}
+	return "Feature updated: " + strings.Join(changes, " and ")
+}
+
+func createRevisionInMongo(featureID int32, authorID int32, changeLog string) error {
+	payload := map[string]any{
+		"feature_id": featureID,
+		"author_id":  authorID,
+		"change_log": changeLog,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal revision payload: %w", err)
+	}
+
+	url := "http://svc-revisions:8085/api/v1/revisions"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create revision request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send revision request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("revision service returned status %d", resp.StatusCode)
 	}
 
 	return nil
