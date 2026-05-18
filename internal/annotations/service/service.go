@@ -26,6 +26,7 @@ type AnnotationsService interface {
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	PatchAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 	DeleteAnnotation(ctx context.Context, id string, authorID int32) error
+	GetFeatureStats(ctx context.Context, featureID int32) ([]model.FeatureStats, error)
 }
 
 type annotationsService struct {
@@ -88,4 +89,12 @@ func verifyFeatureExists(featureID int32) error {
 	}
 
 	return nil
+}
+
+func (s *annotationsService) GetFeatureStats(ctx context.Context, featureID int32) ([]model.FeatureStats, error) {
+
+	if err := verifyFeatureExists(featureID); err != nil {
+		return nil, err
+	}
+	return s.repo.GetFeatureStats(ctx, featureID)
 }

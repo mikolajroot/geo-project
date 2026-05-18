@@ -25,3 +25,7 @@ type ListAnnotationsRequest struct {
 type DeleteAnnotationRequest struct {
 	ID string `param:"id" validate:"required,len=24,hexadecimal"`
 }
+
+type FeatureStatsRequest struct {
+	FeatureID int32 `query:"feature_id" validate:"required,gt=0"`
+}

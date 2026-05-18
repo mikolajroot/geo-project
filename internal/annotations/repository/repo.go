@@ -18,6 +18,7 @@ type AnnotationsRepository interface {
 	Nearby(ctx context.Context, lat float64, lng float64, maxDistance float64) ([]model.NearbyAnnotation, error)
 	UpdateAnnotationText(ctx context.Context, id string, authorID int32, text string) (model.Annotation, error)
 	DeleteAnnotation(ctx context.Context, id string, authorID int32) error
+	GetFeatureStats(ctx context.Context, featureID int32) ([]model.FeatureStats, error)
 }
 
 type annotationsRepository struct {
@@ -30,13 +31,17 @@ func NewAnnotationsRepository(db *mongo.Database) AnnotationsRepository {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	indexModel := mongo.IndexModel{
+	indexModelSphere := mongo.IndexModel{
 		Keys: bson.D{{Key: "location", Value: "2dsphere"}},
 	}
 
-	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	indexModelFeature := mongo.IndexModel{
+		Keys: bson.D{{Key: "feature_id", Value: 1}},
+	}
+
+	_, err := collection.Indexes().CreateMany(ctx, []mongo.IndexModel{indexModelSphere, indexModelFeature})
 	if err != nil {
-		log.Printf("Warning: Failed to create 2dsphere index: %v", err)
+		log.Printf("Warning: Failed to create 2dsphere or feature_id index: %v", err)
 	}
 
 	return &annotationsRepository{collection: collection}
@@ -164,4 +169,43 @@ func (r *annotationsRepository) DeleteAnnotation(ctx context.Context, id string,
 		return apperrors.NewAppError("FORBIDDEN", "you are not the author of this annotation")
 	}
 	return nil
+}
+
+func (r *annotationsRepository) GetFeatureStats(ctx context.Context, featureID int32) ([]model.FeatureStats, error) {
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{
+			{Key: "feature_id", Value: featureID},
+		}}},
+
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$author_id"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+			{Key: "latest", Value: bson.D{{Key: "$max", Value: "$created_at"}}},
+		}}},
+
+		{{Key: "$sort", Value: bson.D{
+			{Key: "count", Value: -1},
+			{Key: "latest", Value: -1},
+		}}},
+
+		{{ Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 0},
+			{Key: "author_id", Value: "$_id"},
+			{Key: "total_annotations", Value: "$count"},
+			{Key: "latest_activity", Value: "$latest"},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, apperrors.NewAppError("INTERNAL_ERROR", "failed to run aggregation pipeline")
+	}
+	defer cursor.Close(ctx)
+
+	var results []model.FeatureStats		
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, apperrors.NewAppError("INTERNAL_ERROR", "failed to decode aggregation results")
+	}
+
+	return results, nil
 }

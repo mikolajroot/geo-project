@@ -24,4 +24,5 @@ func RegisterAnnotationsRoutes(api *echo.Group, jwtSecret string, db *mongo.Data
 	annotations.GET("", h.ListAnnotations)
 	annotations.PATCH("/:id", h.PatchAnnotation)
 	annotations.GET("/nearby", h.HandleNearby)
+	annotations.GET("/feature-stats", h.HandleGetFeatureStats)
 }

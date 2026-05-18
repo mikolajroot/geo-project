@@ -29,3 +29,9 @@ type NearbyAnnotation struct {
 	CreatedAt      time.Time     `bson:"created_at"`
 	DistanceMeters float64       `bson:"distance_meters"`
 }
+
+type FeatureStats struct {
+	AuthorID         int32     `bson:"author_id"`
+	TotalAnnotations int       `bson:"total_annotations"`
+	LatestActivity   time.Time `bson:"latest_activity"`
+}

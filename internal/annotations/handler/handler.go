@@ -126,6 +126,32 @@ func (h *annotationsHandler) HandleNearby(c *echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+func (h *annotationsHandler) HandleGetFeatureStats(c *echo.Context) error {
+	var req FeatureStatsRequest;
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+	stats, err := h.service.GetFeatureStats(c.Request().Context(), req.FeatureID)
+	if err != nil {
+		return err
+	}
+	response := make([]FeatureStatItem, 0, len(stats))
+	for _, stat := range stats {
+		response = append(response, FeatureStatItem{
+			AuthorID:         stat.AuthorID,
+			TotalAnnotations: stat.TotalAnnotations,
+			LatestActivity:   stat.LatestActivity,
+		})
+	}
+	return c.JSON(http.StatusOK, FeatureStatsResponse{
+		FeatureID: req.FeatureID,
+		Stats:     response,
+	})
+}
+
 func (h *annotationsHandler) PatchAnnotation(c *echo.Context) error {
 	var req PatchAnnotationRequest
 	if err := c.Bind(&req); err != nil {
