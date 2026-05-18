@@ -28,9 +28,14 @@ func (h *revisionHandler) CreateRevision(c *echo.Context) error {
 		return err
 	}
 
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
 	revision := &model.Revision{
 		FeatureID: req.FeatureID,
-		AuthorID:  req.AuthorID,
+		AuthorID:  cl.UserID,
 		ChangeLog: req.ChangeLog,
 	}
 
@@ -130,13 +135,13 @@ func (h *revisionHandler) GetRevisionByID(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, GetRevisionResponse{
-		ID:        revision.ID.Hex(),
-		FeatureID: revision.FeatureID,
-		AuthorID:  revision.AuthorID,
-		ChangeLog: revision.ChangeLog,
-		Comments:  comments,
-		CreatedAt: revision.CreatedAt,
-		UpdatedAt: revision.UpdatedAt,
+		ID:          revision.ID.Hex(),
+		FeatureID:   revision.FeatureID,
+		AuthorID:    revision.AuthorID,
+		ChangeLog:   revision.ChangeLog,
+		Comments:    comments,
+		CreatedAt:   revision.CreatedAt,
+		UpdatedAt:   revision.UpdatedAt,
 		FeatureName: featureName,
 	})
 }

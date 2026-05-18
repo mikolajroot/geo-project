@@ -16,7 +16,7 @@ import (
 
 type FeatureService interface {
 	CreateFeature(ctx context.Context, ownerExternalID int32, ownerLogin string, name string, featureType string, geometry string, properties string, layerID int32) (*model.Feature, error)
-	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error)
+	UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string, authToken string) (*model.Feature, error)
 	DeleteFeature(ctx context.Context, featureID int32, ownerExternalID int32, authToken string) error
 	GetFeature(ctx context.Context, featureID int32) (*model.Feature, error)
 	GetFeaturesByLayer(ctx context.Context, layerID int32, featureType string, sortBy string, page int, pageSize int, bbox string) ([]model.Feature, int, error)
@@ -55,14 +55,14 @@ func (s *featureService) CreateFeature(ctx context.Context, ownerExternalID int3
 	return feature, nil
 }
 
-func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string) (*model.Feature, error) {
+func (s *featureService) UpdateFeature(ctx context.Context, featureID int32, ownerExternalID int32, geometry *string, properties *string, authToken string) (*model.Feature, error) {
 	feature, err := s.repo.UpdateFeatureByIDAndOwner(featureID, ownerExternalID, geometry, properties)
 	if err != nil {
 		return nil, err
 	}
 
 	changeLog := buildChangeLog(geometry, properties)
-	if err := createRevisionInMongo(featureID, ownerExternalID, changeLog); err != nil {
+	if err := createRevisionInMongo(featureID, changeLog, authToken); err != nil {
 		fmt.Printf("warning: failed to create revision for feature %d: %v\n", featureID, err)
 	}
 
@@ -177,10 +177,9 @@ func buildChangeLog(geometry *string, properties *string) string {
 	return "Feature updated: " + strings.Join(changes, " and ")
 }
 
-func createRevisionInMongo(featureID int32, authorID int32, changeLog string) error {
+func createRevisionInMongo(featureID int32, changeLog string, authToken string) error {
 	payload := map[string]any{
 		"feature_id": featureID,
-		"author_id":  authorID,
 		"change_log": changeLog,
 	}
 
@@ -196,6 +195,9 @@ func createRevisionInMongo(featureID int32, authorID int32, changeLog string) er
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	if authToken != "" {
+		req.Header.Set("Authorization", authToken)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

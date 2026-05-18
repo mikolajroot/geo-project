@@ -109,6 +109,7 @@ func (h *featureHandler) HandleUpdateFeature(c *echo.Context) error {
 		cl.UserID,
 		geometryJSON,
 		propertiesJSON,
+		c.Request().Header.Get("Authorization"),
 	)
 	if err != nil {
 		return err
