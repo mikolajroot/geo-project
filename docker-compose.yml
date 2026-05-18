@@ -37,6 +37,12 @@ services:
       - mongodb_data:/data/db
     networks:
       - db-net
+    healthcheck:
+      test: ["CMD", "mongosh", "-u", "admin", "-p", "secret", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
   svc-layers:
     build:
       context: .
@@ -176,7 +182,7 @@ services:
       - "8084"
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
       svc-features:
         condition: service_healthy
     networks:
@@ -207,7 +213,7 @@ services:
       - "8085"
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
       svc-features:
         condition: service_healthy
     networks:
