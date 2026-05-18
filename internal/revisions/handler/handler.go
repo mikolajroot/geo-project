@@ -115,7 +115,7 @@ func (h *revisionHandler) GetRevisionByID(c *echo.Context) error {
 		return err
 	}
 
-	revision, err := h.service.GetByID(c.Request().Context(), req.ID)
+	revision, featureName, err := h.service.GetByID(c.Request().Context(), req.ID)
 	if err != nil {
 		return err
 	}
@@ -137,5 +137,6 @@ func (h *revisionHandler) GetRevisionByID(c *echo.Context) error {
 		Comments:  comments,
 		CreatedAt: revision.CreatedAt,
 		UpdatedAt: revision.UpdatedAt,
+		FeatureName: featureName,
 	})
 }

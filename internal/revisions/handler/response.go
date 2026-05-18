@@ -31,11 +31,12 @@ type CommentResponse struct {
 }
 
 type GetRevisionResponse struct {
-	ID        string            `json:"id"`
-	FeatureID int32             `json:"feature_id"`
-	AuthorID  int32             `json:"author_id"`
-	ChangeLog string            `json:"change_log"`
-	Comments  []CommentResponse `json:"comments"`
-	CreatedAt time.Time         `json:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at"`
+	ID          string            `json:"id"`
+	FeatureID   int32             `json:"feature_id"`
+	FeatureName string            `json:"feature_name,omitempty"`
+	AuthorID    int32             `json:"author_id"`
+	ChangeLog   string            `json:"change_log"`
+	Comments    []CommentResponse `json:"comments"`
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
 }
