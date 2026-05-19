@@ -57,7 +57,7 @@ services:
     environment:
       - PORT=8080
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
@@ -90,7 +90,7 @@ services:
     environment:
       - PORT=8081
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
@@ -116,7 +116,7 @@ services:
     environment:
       - PORT=8082
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
@@ -151,7 +151,7 @@ services:
     environment:
       - PORT=8083
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
@@ -172,7 +172,7 @@ services:
       - MONGO_DB_NAME=geo_annotations
       - PORT=8084
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
@@ -203,7 +203,7 @@ services:
       - MONGO_DB_NAME=geo_annotations
       - PORT=8085
       - DB_HOST=${DB_HOST}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
