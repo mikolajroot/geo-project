@@ -13,6 +13,7 @@ import (
 type LayerRepository interface {
 	GetLayers(ctx context.Context, status *string, geometryType *string, sortBy *string, page int, pageSize int) ([]models.Layer, int, error)
 	GetLayerByID(ctx context.Context, id int32) (models.Layer, error)
+	EnsureOwner(ctx context.Context, externalID int32, login string) (int32, error)
 	CreateLayer(ctx context.Context, layer models.Layer) (models.Layer, error)
 	UpdateLayer(ctx context.Context, id int32, name *string, description *string, status *string) (models.Layer, error)
 	ArchiveLayer(ctx context.Context, id int32) (models.Layer, error)
@@ -30,6 +31,10 @@ func NewLayerRepository(db *goqu.Database) LayerRepository {
 
 var ErrDuplicateLayerName = errors.New("layer with this name already exists")
 var ErrLayerNotFound = errors.New("layer not found")
+
+type ownerRow struct {
+	ID int32 `db:"id"`
+}
 
 type LayerWithCount struct {
 	models.Layer
@@ -125,6 +130,26 @@ func (r *layerRepository) GetLayerByID(ctx context.Context, id int32) (models.La
 	}
 
 	return layer, nil
+}
+
+func (r *layerRepository) EnsureOwner(ctx context.Context, externalID int32, login string) (int32, error) {
+	query := r.db.Insert("owners").Rows(goqu.Record{
+		"external_id": externalID,
+		"login":       login,
+	}).OnConflict(goqu.DoUpdate("external_id", goqu.Record{
+		"login": login,
+	})).Returning("id")
+
+	var owner ownerRow
+	found, err := query.Executor().ScanStructContext(ctx, &owner)
+	if err != nil {
+		return 0, fmt.Errorf("db error: %w", err)
+	}
+	if !found {
+		return 0, fmt.Errorf("db error: failed to ensure owner")
+	}
+
+	return owner.ID, nil
 }
 
 func (r *layerRepository) CreateLayer(ctx context.Context, layer models.Layer) (models.Layer, error) {

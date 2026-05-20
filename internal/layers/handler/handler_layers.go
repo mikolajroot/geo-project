@@ -102,12 +102,18 @@ func (h *layerHandler) HandleCreateLayer(c *echo.Context) error {
 		return err
 	}
 
+	cl, ok := midleware.GetClaims(c)
+	if !ok || cl.UserID <= 0 {
+		return apperrors.NewAppError("UNAUTHORIZED", "missing or invalid user claims")
+	}
+
 	params := service.CreateLayerParams{
-		Name:         req.Name,
-		Description:  req.Description,
-		GeometryType: req.GeometryType,
-		SRID:         req.SRID,
-		OwnerID:      req.OwnerID,
+		Name:            req.Name,
+		Description:     req.Description,
+		GeometryType:    req.GeometryType,
+		SRID:            req.SRID,
+		OwnerExternalID: cl.UserID,
+		OwnerLogin:      cl.Login,
 	}
 
 	ctx := c.Request().Context()

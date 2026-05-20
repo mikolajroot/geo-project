@@ -13,7 +13,6 @@ type CreateLayerRequest struct {
 	Description  string `json:"description" validate:"omitempty"`
 	GeometryType string `json:"geometry_type" validate:"required,oneof=POINT LINESTRING POLYGON MULTIPOINT MULTILINESTRING MULTIPOLYGON COLLECTION"`
 	SRID         int32  `json:"srid" validate:"required,min=1"`
-	OwnerID      *int32 `json:"owner_id" validate:"omitempty,min=1"`
 }
 
 type IDRequest struct {

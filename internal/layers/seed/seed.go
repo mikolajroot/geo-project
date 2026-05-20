@@ -43,11 +43,12 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 		randomName := fmt.Sprintf("%s - %s", gofakeit.City(), gofakeit.JobDescriptor())
 
 		params := service.CreateLayerParams{
-			Name:         randomName,
-			Description:  gofakeit.Sentence(8),
-			GeometryType: gofakeit.RandomString(geometryTypes),
-			SRID:         4326,
-			OwnerID:      &defaultOwner,
+			Name:            randomName,
+			Description:     gofakeit.Sentence(8),
+			GeometryType:    gofakeit.RandomString(geometryTypes),
+			SRID:            4326,
+			OwnerExternalID: defaultOwner,
+			OwnerLogin:      "seed",
 		}
 
 		_, err := s.layerService.CreateLayer(ctx, params)

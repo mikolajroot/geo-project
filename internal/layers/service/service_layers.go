@@ -11,11 +11,12 @@ import (
 )
 
 type CreateLayerParams struct {
-	Name         string
-	Description  string
-	GeometryType string
-	SRID         int32
-	OwnerID      *int32
+	Name            string
+	Description     string
+	GeometryType    string
+	SRID            int32
+	OwnerExternalID int32
+	OwnerLogin      string
 }
 
 type UpdateLayerParams struct {
@@ -81,9 +82,9 @@ func (s *layerService) GetLayerByID(ctx context.Context, id int32) (models.Layer
 }
 
 func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams) (models.Layer, error) {
-	resolvedOwnerID := int32(1)
-	if params.OwnerID != nil && *params.OwnerID > 0 {
-		resolvedOwnerID = *params.OwnerID
+	ownerID, err := s.repo.EnsureOwner(ctx, params.OwnerExternalID, params.OwnerLogin)
+	if err != nil {
+		return models.Layer{}, fmt.Errorf("failed to ensure owner: %w", err)
 	}
 
 	layer := models.Layer{
@@ -92,7 +93,7 @@ func (s *layerService) CreateLayer(ctx context.Context, params CreateLayerParams
 		GeometryType: params.GeometryType,
 		Status:       "active",
 		SRID:         params.SRID,
-		OwnerID:      resolvedOwnerID,
+		OwnerID:      ownerID,
 	}
 
 	created, err := s.repo.CreateLayer(ctx, layer)
