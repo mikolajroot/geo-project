@@ -224,6 +224,37 @@ services:
       - db_user
       - db_password
       - secret_key
+
+  svc-routing:
+    build:
+      context: ./svc-routing
+      args:
+        SERVICE_NAME: svc-routing
+    networks:
+      - app-net
+      - db-net
+      - proxy-net
+    expose:
+      - "8086"
+    environment:
+      - PORT=8086
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+    secrets:
+      - db_user
+      - db_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      svc-features:
+        condition: service_healthy
+      svc-annotations:
+        condition: service_started
+    
+    
   nginx:
     image: nginx:alpine
     ports:
@@ -236,9 +267,13 @@ services:
       - svc-features
       - svc-analytics
       - svc-annotations
+      - svc-revisions
+      - svc-routing
     restart: always
     networks:
       - proxy-net
+
+  
 
 volumes:
     geo_postgres_data:

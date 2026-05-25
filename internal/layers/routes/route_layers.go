@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"geo-project/internal/layers/handler"
 	repositories "geo-project/internal/layers/repository"
@@ -40,10 +39,7 @@ func RegisterLayersRoutes(api *echo.Group, goquDB *goqu.Database, jwtSecret stri
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := dbSeeder.SeedDomainData(ctx, seedCount); err != nil {
+		if err := dbSeeder.SeedDomainData(context.Background(), seedCount); err != nil {
 			log.Printf("db seeding failed: %v", err)
 		}
 	}
