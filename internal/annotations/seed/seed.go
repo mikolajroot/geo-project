@@ -44,6 +44,26 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 
 	gofakeit.Seed(0)
 	rnd := rand.New(rand.NewSource(0))
+	const fixedFeatureID int32 = 1
+
+	for range 50 {
+		annotation := model.Annotation{
+			AuthorID:  int32(gofakeit.Number(1, 50)),
+			FeatureID: fixedFeatureID,
+			Text:      gofakeit.Sentence(10),
+			Location: model.MongoGeoJSON{
+				Type:        "Point",
+				Coordinates: []float64{gofakeit.Float64Range(-180, 180), gofakeit.Float64Range(-90, 90)},
+			},
+			CreatedAt: time.Now().UTC(),
+		}
+
+		if _, err := s.collection.InsertOne(ctx, annotation); err != nil {
+			return fmt.Errorf("failed to insert fixed feature annotation seed: %w", err)
+		}
+	}
+
+	log.Printf("Added 50 annotations for feature %d", fixedFeatureID)
 
 	for range n {
 		featureID := featureIDs[rnd.Intn(len(featureIDs))]
