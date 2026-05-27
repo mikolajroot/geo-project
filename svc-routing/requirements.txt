@@ -3,3 +3,4 @@ uvicorn==0.48.0
 pydantic==2.13.4
 numpy==2.4.6
 pygad==3.6.0
+requests==2.34.2

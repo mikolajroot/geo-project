@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-from typing import List
 
 class Point(BaseModel):
     id: str
@@ -9,8 +8,10 @@ class Point(BaseModel):
 class OptimizationRequest(BaseModel):
     feature_id: int = Field(..., description="ID featura do optymalizacji")
     algorithm: str = Field(default="aco", description="Dostępne: aco, ga, nearest_neighbor, A*, local_search,simulated_annealing")
+    start_idx: int = Field(..., description="Indeks punktu startowego dla A*")
+    goal_idx: int = Field(..., description="Indeks punktu końcowego dla A*")
 
 class OptimizationResponse(BaseModel):
-    ordered_ids: list[dict]
-    # total_distance_km: float
-    # computation_time_ms: float
+    ordered_points: list[Point]
+    total_distance_km: float
+    computation_time_ms: float
