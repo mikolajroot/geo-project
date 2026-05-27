@@ -20,9 +20,10 @@ app.add_middleware(
 )
 
 
-app.include_router(optimize_router, prefix="/api/v1")
+app.include_router(optimize_router)
 
 @app.get("/health", tags=["System"])
 def health_check():
     print("Health check endpoint accessed")
     return {"status": "ok", "service": "routing-ai"}
+
