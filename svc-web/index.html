@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geo UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #121b2d;
+      --line: #2a3a59;
+      --text: #e5edf9;
+      --muted: #96a9c8;
+      --accent: #2dd4bf;
+      --accent2: #38bdf8;
+      --danger: #fb7185;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #1c2a47 0%, #0b1220 45%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 380px 1fr;
+    }
+
+    .card {
+      background: color-mix(in oklab, var(--card) 92%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    h1 { margin: 0 0 10px; font-size: 1.5rem; }
+    h2 { margin: 0 0 10px; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    form { display: grid; gap: 10px; margin-bottom: 14px; }
+
+    label { display: grid; gap: 6px; font-size: 0.92rem; color: var(--muted); }
+
+    input, select, button {
+      font: inherit;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      background: #0f1728;
+      color: var(--text);
+    }
+
+    button {
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      color: #021015;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+    }
+
+    button.secondary {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+    }
+
+    .status {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      white-space: pre-wrap;
+      background: #0e1525;
+      font-size: 0.9rem;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 6px;
+    }
+
+    #map {
+      height: 650px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 10px;
+      max-height: 220px;
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #0e1525;
+      color: #c7d7ef;
+      font-size: 0.82rem;
+    }
+
+    .row { display: grid; gap: 10px; }
+
+    .error { color: var(--danger); }
+
+    @media (max-width: 980px) {
+      .container { grid-template-columns: 1fr; }
+      #map { height: 460px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="card">
+      <h1>Geo Route Console</h1>
+
+      <h2>Login</h2>
+      <form id="login-form">
+        <label>Login <input id="login" type="text" required /></label>
+        <label>Password <input id="password" type="password" required /></label>
+        <button type="submit">Login</button>
+      </form>
+
+      <h2>Optimize Route</h2>
+      <form id="optimize-form">
+        <div class="row">
+          <label>Feature ID <input id="feature-id" type="number" value="1" min="1" required /></label>
+          <label>Algorithm
+            <select id="algorithm">
+              <option value="A*">A*</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Start Index <input id="start-idx" type="number" value="0" min="0" required readonly /></label>
+          <label>Goal Index <input id="goal-idx" type="number" value="1" min="0" required readonly /></label>
+        </div>
+        <button id="load-points" type="button" class="secondary">Load annotations on map</button>
+        <button type="submit">Send to Optimize</button>
+      </form>
+      
+
+
+      <div id="status" class="status">No token stored.</div>
+    </section>
+
+    <section class="card">
+      <h2>Route Map</h2>
+      <div id="map"></div>
+      <pre id="result">{}</pre>
+    </section>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const tokenKey = 'geo.access.token';
+    const featureIdInput = document.getElementById('feature-id');
+    const startIdxInput = document.getElementById('start-idx');
+    const goalIdxInput = document.getElementById('goal-idx');
+
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const routeLayer = L.layerGroup().addTo(map);
+    const pointsLayer = L.layerGroup().addTo(map);
+    let annotationPoints = [];
+    let selectedStartIdx = null;
+    let selectedGoalIdx = null;
+
+    function getToken() {
+      return localStorage.getItem(tokenKey) || '';
+    }
+
+    function setToken(token) {
+      if (!token) {
+        localStorage.removeItem(tokenKey);
+        statusEl.textContent = 'No token stored.';
+        return;
+      }
+      localStorage.setItem(tokenKey, token);
+      statusEl.textContent = `Token ready: ${token.slice(0, 16)}...`;
+      statusEl.classList.remove('error');
+    }
+
+    async function readPayload(response) {
+      const txt = await response.text();
+      if (!txt) return {};
+      try { return JSON.parse(txt); } catch { return { detail: txt }; }
+    }
+
+    async function auth(endpoint, login, password) {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password })
+      });
+      const payload = await readPayload(response);
+      if (!response.ok) throw new Error(payload.detail || 'Auth failed');
+      setToken(payload.access_token || '');
+    }
+
+    function markerStyle(kind) {
+      if (kind === 'start') return 'background:#22c55e;color:#021015;border-color:#22c55e;';
+      if (kind === 'goal') return 'background:#fb7185;color:#19020a;border-color:#fb7185;';
+      return 'background:#0f1728;color:#e5edf9;border-color:#2a3a59;';
+    }
+
+    function markerIcon(label, kind) {
+      return L.divIcon({
+        className: '',
+        html: `<div style="${markerStyle(kind)} width:26px;height:26px;border-radius:999px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">${label}</div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
+    }
+
+    function updateSelectionInputs() {
+      startIdxInput.value = selectedStartIdx ?? '';
+      goalIdxInput.value = selectedGoalIdx ?? '';
+    }
+
+    function renderAnnotationMarkers() {
+      pointsLayer.clearLayers();
+
+      annotationPoints.forEach((point, idx) => {
+        let kind = 'normal';
+        if (selectedStartIdx === idx) kind = 'start';
+        if (selectedGoalIdx === idx) kind = 'goal';
+
+        const marker = L.marker([point.lat, point.lng], { icon: markerIcon(idx, kind) }).addTo(pointsLayer);
+        marker.bindPopup(`idx: ${idx}<br/>id: ${point.id || 'n/a'}`);
+        marker.on('click', () => {
+          if (selectedStartIdx === idx) {
+            selectedStartIdx = null;
+          } else if (selectedGoalIdx === idx) {
+            selectedGoalIdx = null;
+          } else if (selectedStartIdx === null) {
+            selectedStartIdx = idx;
+          } else if (selectedGoalIdx === null) {
+            selectedGoalIdx = idx;
+          } else {
+            selectedStartIdx = idx;
+          }
+
+          updateSelectionInputs();
+          renderAnnotationMarkers();
+
+          if (selectedStartIdx !== null && selectedGoalIdx !== null) {
+            statusEl.textContent = `Selected start_idx=${selectedStartIdx}, goal_idx=${selectedGoalIdx}.`;
+            statusEl.classList.remove('error');
+          }
+        });
+      });
+    }
+
+    async function loadAnnotationsForFeature() {
+      const featureId = Number(featureIdInput.value);
+      if (!Number.isFinite(featureId) || featureId < 1) {
+        throw new Error('Feature ID must be a positive number.');
+      }
+
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/v1/annotations?features=${featureId}`, { headers });
+      const payload = await readPayload(response);
+      if (!response.ok) {
+        throw new Error(payload.detail || 'Failed to load annotations');
+      }
+
+      const raw = Array.isArray(payload.data) ? payload.data : [];
+      annotationPoints = raw
+        .map((item) => {
+          const location = item.location || {};
+          const coordinates = location.coordinates || location.Coordinates || [];
+          if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+            return null;
+          }
+          return {
+            id: item.id,
+            lng: Number(coordinates[0]),
+            lat: Number(coordinates[1])
+          };
+        })
+        .filter((p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+      if (!annotationPoints.length) {
+        throw new Error('No valid annotation points for this feature_id.');
+      }
+
+      selectedStartIdx = null;
+      selectedGoalIdx = null;
+      updateSelectionInputs();
+      renderAnnotationMarkers();
+
+      const bounds = L.latLngBounds(annotationPoints.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds.pad(0.2));
+
+      statusEl.textContent = `Loaded ${annotationPoints.length} annotations. Click markers to select start and goal.`;
+      statusEl.classList.remove('error');
+    }
+
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await auth('/api/v1/auth/login', document.getElementById('login').value.trim(), document.getElementById('password').value);
+        statusEl.textContent = 'Login successful.';
+        statusEl.classList.remove('error');
+      } catch (err) {
+        statusEl.textContent = err.message;
+        statusEl.classList.add('error');
+      }
+    });
+
+
+    document.getElementById('load-points').addEventListener('click', async () => {
+      try {
+        await loadAnnotationsForFeature();
+      } catch (err) {
+        statusEl.textContent = err.message;
+        statusEl.classList.add('error');
+      }
+    });
+
+    document.getElementById('optimize-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (selectedStartIdx === null || selectedGoalIdx === null) {
+        statusEl.textContent = 'Select both start and goal by clicking annotation markers first.';
+        statusEl.classList.add('error');
+        return;
+      }
+
+      routeLayer.clearLayers();
+      statusEl.textContent = 'Optimizing route...';
+      statusEl.classList.remove('error');
+
+      const body = {
+        feature_id: Number(featureIdInput.value),
+        algorithm: document.getElementById('algorithm').value,
+        start_idx: selectedStartIdx,
+        goal_idx: selectedGoalIdx
+      };
+
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      try {
+        const response = await fetch('/api/v1/routing/optimize', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        const payload = await readPayload(response);
+        resultEl.textContent = JSON.stringify(payload, null, 2);
+
+        if (!response.ok) {
+          throw new Error(payload.detail || 'Optimize request failed');
+        }
+
+        const points = payload.ordered_points || [];
+        if (!points.length) {
+          statusEl.textContent = 'No points returned.';
+          return;
+        }
+
+        const latLngs = points.map((p) => [p.lat, p.lng]);
+        const line = L.polyline(latLngs, { color: '#22d3ee', weight: 5 }).addTo(routeLayer);
+        L.marker(latLngs[0]).addTo(routeLayer).bindPopup('Start').openPopup();
+        L.marker(latLngs[latLngs.length - 1]).addTo(routeLayer).bindPopup('Goal');
+        map.fitBounds(line.getBounds().pad(0.2));
+
+        statusEl.textContent = `Route ready: ${payload.total_distance_km.toFixed(2)} km in ${payload.computation_time_ms} ms`;
+      } catch (err) {
+        statusEl.textContent = err.message;
+        statusEl.classList.add('error');
+      }
+    });
+
+    setToken(getToken());
+  </script>
+</body>
+</html>
