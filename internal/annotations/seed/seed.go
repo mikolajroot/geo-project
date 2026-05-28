@@ -46,9 +46,9 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 	rnd := rand.New(rand.NewSource(0))
 	const fixedFeatureID int32 = 1
 
-	for range 100 {
+	for range 98 {
 		annotation := model.Annotation{
-			AuthorID:  int32(gofakeit.Number(1, 100)),
+			AuthorID:  int32(gofakeit.Number(1, 98)),
 			FeatureID: fixedFeatureID,
 			Text:      gofakeit.Sentence(10),
 			Location: model.MongoGeoJSON{
@@ -63,7 +63,7 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 		}
 	}
 
-	log.Printf("Added 100 annotations for feature %d", fixedFeatureID)
+	log.Printf("Added 98 annotations for feature %d", fixedFeatureID)
 
 	for range n {
 		featureID := featureIDs[rnd.Intn(len(featureIDs))]
