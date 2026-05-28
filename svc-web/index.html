@@ -141,6 +141,7 @@
           <label>Algorithm
             <select id="algorithm">
               <option value="A*">A*</option>
+              <option value="nearest_neighbor">Nearest Neighbor</option>
             </select>
           </label>
         </div>
@@ -237,6 +238,7 @@
 
     function renderAnnotationMarkers() {
       pointsLayer.clearLayers();
+      const algorithm = document.getElementById('algorithm').value;
 
       annotationPoints.forEach((point, idx) => {
         let kind = 'normal';
@@ -246,16 +248,26 @@
         const marker = L.marker([point.lat, point.lng], { icon: markerIcon(idx, kind) }).addTo(pointsLayer);
         marker.bindPopup(`idx: ${idx}<br/>id: ${point.id || 'n/a'}`);
         marker.on('click', () => {
-          if (selectedStartIdx === idx) {
-            selectedStartIdx = null;
-          } else if (selectedGoalIdx === idx) {
-            selectedGoalIdx = null;
-          } else if (selectedStartIdx === null) {
-            selectedStartIdx = idx;
-          } else if (selectedGoalIdx === null) {
-            selectedGoalIdx = idx;
+          if (algorithm === 'A*') {
+            if (selectedStartIdx === idx) {
+              selectedStartIdx = null;
+            } else if (selectedGoalIdx === idx) {
+              selectedGoalIdx = null;
+            } else if (selectedStartIdx === null) {
+              selectedStartIdx = idx;
+            } else if (selectedGoalIdx === null) {
+              selectedGoalIdx = idx;
+            } else {
+              selectedStartIdx = idx;
+            }
           } else {
-            selectedStartIdx = idx;
+            if (selectedStartIdx === idx) {
+              selectedStartIdx = null;
+            } else {
+              selectedStartIdx = idx;
+            }
+            // ensure goal is cleared
+            selectedGoalIdx = null;
           }
 
           updateSelectionInputs();
@@ -264,10 +276,29 @@
           if (selectedStartIdx !== null && selectedGoalIdx !== null) {
             statusEl.textContent = `Selected start_idx=${selectedStartIdx}, goal_idx=${selectedGoalIdx}.`;
             statusEl.classList.remove('error');
+          } else if (selectedStartIdx !== null) {
+            statusEl.textContent = `Selected start_idx=${selectedStartIdx}.`;
+            statusEl.classList.remove('error');
           }
         });
       });
     }
+
+    // update UI when algorithm changes: disable/enable goal selection
+    document.getElementById('algorithm').addEventListener('change', () => {
+      const algorithm = document.getElementById('algorithm').value;
+      if (algorithm !== 'A*') {
+        // clear goal selection and disable input
+        selectedGoalIdx = null;
+        goalIdxInput.value = '';
+        goalIdxInput.disabled = true;
+        statusEl.textContent = 'Goal disabled for selected algorithm; select only start.';
+      } else {
+        goalIdxInput.disabled = false;
+        statusEl.textContent = 'Select start and goal by clicking markers.';
+      }
+      renderAnnotationMarkers();
+    });
 
     async function loadAnnotationsForFeature() {
       const featureId = Number(featureIdInput.value);
@@ -319,6 +350,8 @@
       statusEl.classList.remove('error');
     }
 
+    
+
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -345,21 +378,30 @@
     document.getElementById('optimize-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      if (selectedStartIdx === null || selectedGoalIdx === null) {
-        statusEl.textContent = 'Select both start and goal by clicking annotation markers first.';
-        statusEl.classList.add('error');
-        return;
+      const algorithm = document.getElementById('algorithm').value;
+      if (algorithm === 'A*') {
+        if (selectedStartIdx === null || selectedGoalIdx === null) {
+          statusEl.textContent = 'Select both start and goal by clicking annotation markers first.';
+          statusEl.classList.add('error');
+          return;
+        }
+      } else {
+        if (selectedStartIdx === null) {
+          statusEl.textContent = 'Select a start by clicking an annotation marker first.';
+          statusEl.classList.add('error');
+          return;
+        }
+        selectedGoalIdx = null;
       }
 
       routeLayer.clearLayers();
       statusEl.textContent = 'Optimizing route...';
       statusEl.classList.remove('error');
-
       const body = {
         feature_id: Number(featureIdInput.value),
-        algorithm: document.getElementById('algorithm').value,
+        algorithm,
         start_idx: selectedStartIdx,
-        goal_idx: selectedGoalIdx
+        goal_idx: algorithm === 'A*' ? selectedGoalIdx : null
       };
 
       const headers = { 'Content-Type': 'application/json' };
