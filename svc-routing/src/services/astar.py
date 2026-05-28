@@ -29,7 +29,7 @@ def a_star(start_idx, goal_idx, points, dist_matrix):
 
     open_set = []
     heapq.heappush(open_set, (0, start_idx))
-    open_set_hash = {start_idx}
+    # open_set_hash = {start_idx}
 
     came_from = {}
 
@@ -41,7 +41,10 @@ def a_star(start_idx, goal_idx, points, dist_matrix):
 
     while open_set:
         current_f, current = heapq.heappop(open_set)
-        open_set_hash.remove(current)
+        # open_set_hash.remove(current)
+
+        if current_f > f_score[current]:
+            continue
 
         if current == goal_idx:
             end_time = time.time()
@@ -61,9 +64,7 @@ def a_star(start_idx, goal_idx, points, dist_matrix):
                 g_score[neighbor] = tentative_g_score
                 f_score[neighbor] = tentative_g_score + heuristic(points[neighbor], points[goal_idx])
 
-                if neighbor not in open_set_hash:
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                    open_set_hash.add(neighbor)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
 
 
     return [], time.time() - start_time
