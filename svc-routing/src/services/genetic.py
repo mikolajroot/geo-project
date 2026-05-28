@@ -25,8 +25,8 @@ def genetic_algorithm(start_idx, points, dist_matrix):
     ga_tsp = GA_TSP(
         func=calc_total_distance, 
         n_dim=num_points, 
-        size_pop=50, 
-        max_iter=300, 
+        size_pop=200, 
+        max_iter=3000, 
         prob_mut=0.1
     )
     
