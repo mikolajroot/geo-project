@@ -18,13 +18,18 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service 
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /root/
+RUN apk --no-cache add ca-certificates tzdata \
+    && addgroup -S app \
+    && adduser -S app -G app
+
+
+WORKDIR /app
 
 COPY --from=builder /app/bin/service .
 COPY --from=builder /app/db/migrations ./db/migrations
+RUN chown -R app:app /app
 
-EXPOSE 8080
+USER app
 
 CMD ["./service"]

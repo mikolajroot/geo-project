@@ -49,8 +49,8 @@ services:
     image: mongo:8.0
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_ROOT_USERNAME: /run/secrets/mongo_username
+      MONGO_INITDB_ROOT_PASSWORD: /run/secrets/mongo_password
       MONGO_INITDB_DATABASE: geo_annotations
     expose:
       - "27017"
@@ -64,6 +64,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    secrets:
+      - mongo_username
+      - mongo_password
   svc-layers:
     build:
       context: .
@@ -307,3 +310,7 @@ secrets:
     file: ./secrets/db_user.txt
   secret_key:
     file: ./secrets/secret_key.txt
+  mongo_password:
+    file: ./secrets/mongo_password.txt
+  mongo_username:
+    file: ./secrets/mongo_username.txt
