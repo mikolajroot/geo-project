@@ -11,6 +11,7 @@ from src.services.osrm import get_distance_matrix
 from src.services.astar import a_star, heuristic
 from src.services.nearest_neighbor import nearest_neighbor
 from src.services.genetic import genetic_algorithm
+from src.services.aco import ant_colony_optimization
 
 router = APIRouter(tags=["Optimization"])
 
@@ -82,7 +83,7 @@ def optimize_route(request: OptimizationRequest, incoming_request: Request):
     if not points:
         raise HTTPException(status_code=404, detail=f"no annotations found for feature_id {request.feature_id}")
 
-    if request.algorithm not in ["A*", "nearest_neighbor", "genetic"]:
+    if request.algorithm not in ["A*", "nearest_neighbor", "genetic", "ant_colony"]:
         raise HTTPException(status_code=400, detail="unsupported algorithm")
     
     if request.algorithm == "A*" and (request.goal_idx is None):
@@ -152,6 +153,26 @@ def optimize_route(request: OptimizationRequest, incoming_request: Request):
                 from_idx = ordered_indices[i]
                 to_idx = ordered_indices[i + 1]
                 total_distance += _safe_edge_distance(dist_matrix[from_idx][to_idx], points[from_idx], points[to_idx])
+
+        case "ant_colony":
+            try:
+                dist_matrix = get_distance_matrix(points)
+            except Exception as err:
+                raise HTTPException(status_code=502, detail=str(err))
+
+            ordered_indices, computation_time = ant_colony_optimization(start_idx, points, dist_matrix)
+            
+            if not ordered_indices:
+                raise HTTPException(status_code=500, detail="ACO Algorithm failed")
+
+            ordered_points = [points[i] for i in ordered_indices]
+
+            for i in range(len(ordered_indices) - 1):
+                from_idx = ordered_indices[i]
+                to_idx = ordered_indices[i + 1]
+                total_distance += _safe_edge_distance(dist_matrix[from_idx][to_idx], points[from_idx], points[to_idx])
+
+                
 
     return OptimizationResponse(
         ordered_points=ordered_points,
