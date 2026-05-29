@@ -13,8 +13,8 @@ services:
       PGDATA: /var/lib/postgresql/pgdata
     volumes:
       - geo_postgres_data:/var/lib/postgresql
-    ports:
-      - "5435:5432"
+    expose:
+      - "5432"
     secrets:
       - db_password
       - db_user
@@ -24,6 +24,27 @@ services:
       timeout: 5s
       retries: 5
 
+  migration-worker:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: migration-worker
+    networks:
+      - db-net
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER_FILE=/run/secrets/db_user
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - MIGRATIONS_DIR=/root/db/migrations
+    secrets:
+      - db_user
+      - db_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
   mongodb:
     image: mongo:8.0
     restart: always
@@ -31,8 +52,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: secret
       MONGO_INITDB_DATABASE: geo_annotations
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -70,6 +91,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 5s
@@ -101,6 +124,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
 
   svc-features:
     build:
@@ -129,6 +154,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
       svc-layers:
         condition: service_healthy
     healthcheck:
@@ -162,6 +189,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
   svc-annotations:
     build: 
       context: .
@@ -183,6 +212,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
       svc-features:
         condition: service_healthy
     networks:
@@ -214,6 +245,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      migration-worker:
+        condition: service_completed_successfully
       svc-features:
         condition: service_healthy
     networks:

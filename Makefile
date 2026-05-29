@@ -21,7 +21,7 @@ migrate-create:
 	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) $(NAME)
 
 migrate-up:
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+	docker compose run --rm migration-worker
 
 migrate-down:
 	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1

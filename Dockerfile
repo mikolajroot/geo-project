@@ -23,6 +23,7 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
 
 COPY --from=builder /app/bin/service .
+COPY --from=builder /app/db/migrations ./db/migrations
 
 EXPOSE 8080
 
