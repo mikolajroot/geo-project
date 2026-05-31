@@ -13,11 +13,11 @@ def ant_colony_optimization(start_idx, points, dist_matrix):
             elif safe_dist_matrix[i][j] is None or np.isnan(safe_dist_matrix[i][j]):
                 safe_dist_matrix[i][j] = 999999.0
 
-    num_ants = 40        
-    num_iterations = 100  
-    alpha = 1.0 
-    beta = 2.0 
-    evaporation_rate = 0.5 
+    num_ants = 40      
+    num_iterations = 1000
+    alpha = 1.25
+    beta = 5
+    evaporation_rate = 0.2
     Q = 100.0
 
     pheromones = np.ones((num_points, num_points))

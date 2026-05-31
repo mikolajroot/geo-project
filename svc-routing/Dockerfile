@@ -14,4 +14,4 @@ COPY src/ ./src/
 EXPOSE 8086
 
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8086"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8086", "--reload", "--reload-dir", "/app/src"]

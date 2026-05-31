@@ -230,6 +230,8 @@ services:
       context: ./svc-routing
       args:
         SERVICE_NAME: svc-routing
+    volumes:
+      - ./svc-routing/src:/app/src
     networks:
       - app-net
       - db-net
