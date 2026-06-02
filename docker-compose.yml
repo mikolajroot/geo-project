@@ -129,6 +129,11 @@ services:
         condition: service_healthy
       migration-worker:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   svc-features:
     build:
@@ -194,6 +199,11 @@ services:
         condition: service_healthy
       migration-worker:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   svc-annotations:
     build: 
       context: .
@@ -227,6 +237,11 @@ services:
       - db_user
       - db_password
       - secret_key
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   svc-revisions:
     build: 
       context: .
@@ -260,6 +275,11 @@ services:
       - db_user
       - db_password
       - secret_key
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8085/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   nginx:
     image: nginx:alpine
     ports:

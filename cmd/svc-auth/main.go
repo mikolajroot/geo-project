@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/go-playground/validator/v10"
@@ -57,6 +58,13 @@ func main() {
 
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
+
+	e.GET("/health", func(c *echo.Context) error {
+		if err := sqlDB.Ping(); err != nil {
+			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "db_error"})
+		}
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
 
 	api := e.Group("/api/v1/auth")
 

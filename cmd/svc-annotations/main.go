@@ -91,6 +91,13 @@ func main() {
 
 	api := e.Group("/api/v1")
 
+	e.GET("/health", func(c *echo.Context) error {
+		if err := client.Ping(c.Request().Context(), nil); err != nil {
+			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "db_error"})
+		}
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
+
 	routes.RegisterAnnotationsRoutes(api, jwtSecret, db)
 	revisionRoutes.RegisterRevisionsRoutes(api, jwtSecret, db)
 
