@@ -9,8 +9,7 @@ Geo-project to system informacji geograficznej (GIS) oparty na architekturze mik
 2. Uzupełnij zmienne środowiskowe w pliku `.env`.
 3. Upewnij się, że w katalogu `secrets/` znajdują się odpowiednie pliki z poświadczeniami (`db_user.txt`, `db_password.txt`, `secret_key.txt`).
 4. Uruchom system w terminalu przy pomocy zdefiniowanego skryptu:
-   `make up`
-   (Polecenie to wykonuje w tle `docker compose up --build -d`, uruchamiając kontenery wraz z odpowiednimi mechanizmami healthcheck).
+   `make up`.
 
 ## Architektura i Mikroserwisy
 
