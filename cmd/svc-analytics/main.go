@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -17,7 +21,7 @@ import (
 
 	"geo-project/internal/analytics/routes"
 	"geo-project/pkg/database"
-	"geo-project/pkg/errors"
+	apperrors "geo-project/pkg/errors"
 )
 
 type CustomValidator struct {
@@ -41,10 +45,9 @@ func main() {
 	}
 	defer pgxPool.Close()
 
-
 	e := echo.New()
 
-	e.HTTPErrorHandler = errors.CustomHTTPErrorHandler
+	e.HTTPErrorHandler = apperrors.CustomHTTPErrorHandler
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
@@ -68,8 +71,24 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Starting Catalog Service on port %s\n", port)
-	if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server failed to start: %v", err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	server := &http.Server{Addr: ":" + port, Handler: e}
+
+	go func() {
+		log.Printf("Starting Catalog Service on port %s\n", port)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Error shutting down analytics service: %v", err)
 	}
 }

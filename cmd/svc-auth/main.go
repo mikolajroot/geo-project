@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
@@ -77,8 +82,24 @@ func main() {
 		portEnv = "8081"
 	}
 
-	log.Printf("Auth service started at %s", portEnv)
-	if err := e.Start(":" + portEnv); err != nil {
-		log.Fatalf("Server disconnected: %v", err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	server := &http.Server{Addr: ":" + portEnv, Handler: e}
+
+	go func() {
+		log.Printf("Auth service started at %s", portEnv)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server disconnected: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Error shutting down auth service: %v", err)
 	}
 }

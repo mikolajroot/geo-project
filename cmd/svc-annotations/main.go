@@ -101,7 +101,7 @@ func main() {
 	routes.RegisterAnnotationsRoutes(api, jwtSecret, db)
 	revisionRoutes.RegisterRevisionsRoutes(api, jwtSecret, db)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	port := os.Getenv("PORT")
