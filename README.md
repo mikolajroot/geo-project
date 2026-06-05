@@ -29,3 +29,10 @@ System składa się z niezależnych usług, komunikujących się w wewnętrznej 
 - Brak wycieków Stack Trace: Serwisy implementują ustandaryzowany system błędów zdefiniowany w pakiecie `pkg/errors`. Każdy błąd wewnętrzny (np. Panic lub błąd SQL) jest przechwytywany i mapowany na jednolity obiekt JSON bez ujawniania szczegółów implementacyjnych klientowi.
 - Integralność Danych: Próba usunięcia obiektu (Feature) w momencie istnienia powiązanych adnotacji zostaje zablokowana kodem HTTP 409 Conflict.
 - Bezpieczeństwo zapytań: Użycie nowoczesnych sterowników gwarantuje korzystanie z zapytań parametryzowanych, eliminując podatności na SQL Injection oraz NoSQL Injection.
+
+## Komendy
+
+- `docker compose exec svc-layers  cat /run/secrets/db_password`
+- `docker logs geo-project-svc-layers-1 `
+- `docker compose exec nginx ping -c 3 postgres || echo "OK — brak trasy"`
+- `docker volume ls`

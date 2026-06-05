@@ -3,10 +3,6 @@
 include .env
 export
 
-DB_USER := $(shell cat secrets/db_user.txt)
-DB_PASSWORD := $(shell cat secrets/db_password.txt)
-
-DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_TEST_PORT)/$(POSTGRES_DB)?sslmode=disable
 
 MIGRATE := migrate
 MIGRATIONS_DIR := db/migrations
