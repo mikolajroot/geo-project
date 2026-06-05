@@ -45,7 +45,7 @@ services:
       - DB_USER_FILE=/run/secrets/db_user
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=${POSTGRES_DB}
-      - MIGRATIONS_DIR=/root/db/migrations
+      - MIGRATIONS_DIR=/app/db/migrations
     secrets:
       - db_user
       - db_password

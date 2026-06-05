@@ -47,11 +47,29 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	if err := runMigrations(ctx, db, migrationsDir); err != nil {
-		log.Fatalf("Migration worker failed: %v", err)
+	cmd := "up"
+	if len(os.Args) > 1 {
+		cmd = strings.ToLower(os.Args[1])
 	}
 
-	log.Println("Migration worker completed successfully")
+	switch cmd {
+	case "up":
+		if err := runMigrations(ctx, db, migrationsDir); err != nil {
+			log.Fatalf("Migration UP failed: %v", err)
+		}
+	case "down":
+		if err := runDown(ctx, db, migrationsDir); err != nil {
+			log.Fatalf("Migration DOWN failed: %v", err)
+		}
+	case "drop":
+		if err := runDrop(ctx, db); err != nil {
+			log.Fatalf("Migration DROP failed: %v", err)
+		}
+	default:
+		log.Fatalf("Unknown command: %s. Use 'up', 'down', or 'drop'.", cmd)
+	}
+
+	log.Printf("Migration worker completed command '%s' successfully", cmd)
 }
 
 func runMigrations(ctx context.Context, db *sql.DB, migrationsDir string) error {
@@ -59,12 +77,17 @@ func runMigrations(ctx context.Context, db *sql.DB, migrationsDir string) error 
 		return err
 	}
 
-	applied, err := loadAppliedVersions(ctx, db)
+	appliedList, err := loadAppliedVersions(ctx, db)
 	if err != nil {
 		return err
 	}
 
-	files, err := loadMigrationFiles(migrationsDir)
+	applied := make(map[int64]bool)
+	for _, v := range appliedList {
+		applied[v] = true
+	}
+
+	files, err := loadMigrationFiles(migrationsDir, ".up.sql")
 	if err != nil {
 		return err
 	}
@@ -83,6 +106,63 @@ func runMigrations(ctx context.Context, db *sql.DB, migrationsDir string) error 
 	return nil
 }
 
+func runDown(ctx context.Context, db *sql.DB, migrationsDir string) error {
+	if err := ensureMigrationsTable(ctx, db); err != nil {
+		return err
+	}
+
+	appliedList, err := loadAppliedVersions(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	if len(appliedList) == 0 {
+		log.Println("No applied migrations to revert")
+		return nil
+	}
+
+	lastApplied := appliedList[len(appliedList)-1]
+
+	files, err := loadMigrationFiles(migrationsDir, ".down.sql")
+	if err != nil {
+		return err
+	}
+
+	var targetFile *migrationFile
+	for _, f := range files {
+		if f.version == lastApplied {
+			targetFile = &f
+			break
+		}
+	}
+
+	if targetFile == nil {
+		return fmt.Errorf("down migration file not found for version %d", lastApplied)
+	}
+
+	return applyDownMigration(ctx, db, *targetFile)
+}
+
+func runDrop(ctx context.Context, db *sql.DB) error {
+	log.Println("Dropping public schema...")
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.ExecContext(ctx, `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("drop schema public: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	log.Println("Schema public dropped and recreated successfully")
+	return nil
+}
+
 func ensureMigrationsTable(ctx context.Context, db *sql.DB) error {
 	const query = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -98,20 +178,20 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	return nil
 }
 
-func loadAppliedVersions(ctx context.Context, db *sql.DB) (map[int64]bool, error) {
-	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations`)
+func loadAppliedVersions(ctx context.Context, db *sql.DB) ([]int64, error) {
+	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations ORDER BY version ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("load applied migrations: %w", err)
 	}
 	defer rows.Close()
 
-	applied := make(map[int64]bool)
+	var applied []int64
 	for rows.Next() {
 		var version int64
 		if err := rows.Scan(&version); err != nil {
 			return nil, fmt.Errorf("scan applied migration version: %w", err)
 		}
-		applied[version] = true
+		applied = append(applied, version)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -121,8 +201,8 @@ func loadAppliedVersions(ctx context.Context, db *sql.DB) (map[int64]bool, error
 	return applied, nil
 }
 
-func loadMigrationFiles(migrationsDir string) ([]migrationFile, error) {
-	matches, err := filepath.Glob(filepath.Join(migrationsDir, "*.up.sql"))
+func loadMigrationFiles(migrationsDir string, suffix string) ([]migrationFile, error) {
+	matches, err := filepath.Glob(filepath.Join(migrationsDir, "*"+suffix))
 	if err != nil {
 		return nil, fmt.Errorf("list migration files: %w", err)
 	}
@@ -191,6 +271,36 @@ func applyMigration(ctx context.Context, db *sql.DB, file migrationFile) error {
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit migration %s: %w", file.name, err)
+	}
+
+	return nil
+}
+
+func applyDownMigration(ctx context.Context, db *sql.DB, file migrationFile) error {
+	log.Printf("Reverting migration %s", file.name)
+
+	contents, err := os.ReadFile(file.path)
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", file.name, err)
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin down migration transaction for %s: %w", file.name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("execute down migration %s: %w", file.name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version = $1`, file.version); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("remove migration record %s: %w", file.name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit down migration %s: %w", file.name, err)
 	}
 
 	return nil

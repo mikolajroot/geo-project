@@ -10,6 +10,7 @@ DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_TEST_PORT)/$(POSTG
 
 MIGRATE := migrate
 MIGRATIONS_DIR := db/migrations
+MIGRATION_WORKER := docker compose run --rm migration-worker
 
 up:
 	docker compose up -d --build
@@ -21,19 +22,13 @@ migrate-create:
 	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) $(NAME)
 
 migrate-up:
-	docker compose run --rm migration-worker
+	docker compose run --rm migration-worker up
 
 migrate-down:
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
-
-migrate-force:
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" force $(VERSION)
-
-migrate-version:
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" version
+	docker compose run --rm migration-worker down
 
 migrate-drop:
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" drop -f
+	docker compose run --rm migration-worker drop
 
 seed:
 	docker compose up -d postgres
