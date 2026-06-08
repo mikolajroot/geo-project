@@ -31,7 +31,7 @@ def simulated_annealing(start_idx, points, dist_matrix):
     # Hiperparametry chłodzenia
     T = 10000.0
     T_min = 1.0
-    cooling_rate = 0.995
+    cooling_rate = 0.98
     iter_per_temp = 50
 
     # Proces wyżarzania

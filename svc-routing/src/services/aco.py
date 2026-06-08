@@ -14,7 +14,7 @@ def ant_colony_optimization(start_idx, points, dist_matrix):
                 safe_dist_matrix[i][j] = 999999.0
 
     num_ants = 40      
-    num_iterations = 1000
+    num_iterations = 200
     alpha = 1.25
     beta = 5
     evaporation_rate = 0.2

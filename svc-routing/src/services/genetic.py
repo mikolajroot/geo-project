@@ -27,10 +27,10 @@ def genetic_algorithm(start_idx, points, dist_matrix):
     gene_space = list(range(num_points))
 
     ga_instance = pygad.GA(
-        num_generations=1000,
+        num_generations=400,
         num_parents_mating=100, 
         fitness_func=fitness_func,
-        sol_per_pop=200,
+        sol_per_pop=100,
         num_genes=num_points,
         gene_type=int,
         gene_space=gene_space,
