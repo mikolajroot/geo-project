@@ -401,7 +401,8 @@
         feature_id: Number(featureIdInput.value),
         algorithm,
         start_idx: selectedStartIdx,
-        goal_idx: algorithm === 'A*' ? selectedGoalIdx : null
+        goal_idx: algorithm === 'A*' ? selectedGoalIdx : null,
+        points: null
       };
 
       const headers = { 'Content-Type': 'application/json' };

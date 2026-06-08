@@ -78,8 +78,11 @@ def _safe_edge_distance(weight, from_point: Point, to_point: Point) -> float:
 
 @router.post("/optimize", response_model=OptimizationResponse)
 def optimize_route(request: OptimizationRequest, incoming_request: Request):
-    raw_annotations = _fetch_annotations(request.feature_id, incoming_request.headers.get("authorization"))
-    points = _extract_points(raw_annotations)
+    if request.points is not None:
+        points = [Point(**pt) for pt in request.points]
+    else:
+        raw_annotations = _fetch_annotations(request.feature_id, incoming_request.headers.get("authorization"))
+        points = _extract_points(raw_annotations)
 
     if not points:
         raise HTTPException(status_code=404, detail=f"no annotations found for feature_id {request.feature_id}")
