@@ -47,7 +47,6 @@ def simulated_annealing(start_idx, points, dist_matrix):
             new_dist = calc_dist(new_path)
             delta = new_dist - current_dist
             
-            # Decyzja: Akceptujemy czy odrzucamy?
             if delta < 0:
                 # Trasa jest krótsza
                 current_path = new_path
