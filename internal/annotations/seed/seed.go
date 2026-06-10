@@ -42,6 +42,8 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 		return fmt.Errorf("no features found, cannot seed annotations")
 	}
 
+	featureIDs = featureIDs[1:]
+
 	gofakeit.Seed(0)
 	rnd := rand.New(rand.NewSource(0))
 	const fixedFeatureID int32 = 1
