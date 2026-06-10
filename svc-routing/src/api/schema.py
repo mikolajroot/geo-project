@@ -9,9 +9,8 @@ class Point(BaseModel):
 
 class OptimizationRequest(BaseModel):
     feature_id: int = Field(..., description="ID featura do optymalizacji")
-    algorithm: str = Field(default="aco", description="Dostępne: aco, ga, nearest_neighbor, A*,simulated_annealing")
-    start_idx: int = Field(..., description="Indeks punktu startowego dla A*")
-    goal_idx: Optional[int] = Field(..., description="Indeks punktu końcowego dla A*")
+    algorithm: str = Field(default="aco", description="Dostępne: aco, ga, nearest_neighbor,simulated_annealing")
+    start_idx: int = Field(..., description="Indeks punktu startowego")
     points: Optional[list] = Field(..., description="Punkty do testów")
 
 class OptimizationResponse(BaseModel):

@@ -53,7 +53,7 @@ func (s *Seeder) SeedDomainData(ctx context.Context, n int) error {
 			Text:      gofakeit.Sentence(10),
 			Location: model.MongoGeoJSON{
 				Type:        "Point",
-				Coordinates: []float64{54.35 + gofakeit.Float64Range(-0.1, 0.1), 18.64 + gofakeit.Float64Range(-0.1, 0.1)},
+				Coordinates: []float64{18.64 + gofakeit.Float64Range(-0.1, 0.1),54.35 + gofakeit.Float64Range(-0.1, 0.1)},
 			},
 			CreatedAt: time.Now().UTC(),
 		}
