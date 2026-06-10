@@ -3,6 +3,8 @@ import math
 import random
 import numpy as np
 
+from src.services.nearest_neighbor import nearest_neighbor
+
 def simulated_annealing(start_idx, points, dist_matrix):
     start_time = time.time()
     num_points = len(points)
@@ -20,9 +22,8 @@ def simulated_annealing(start_idx, points, dist_matrix):
         return d
 
     # Inicjalizacja trasy
-    inner_nodes = [i for i in range(num_points) if i != start_idx]
-    random.shuffle(inner_nodes)
-    current_path = [start_idx] + inner_nodes + [start_idx]
+    nn_path, _ = nearest_neighbor(start_idx, points, dist_matrix)
+    current_path = nn_path[:-1]
     current_dist = calc_dist(current_path)
 
     best_path = list(current_path)
