@@ -52,7 +52,7 @@ def simulated_annealing(start_idx, points, dist_matrix):
                 current_path = new_path
                 current_dist = new_dist
                 
-                # Zapis do najlepszego rowiązania
+                # Zapis do najlepszego rozwiązania
                 if current_dist < best_dist:
                     best_path = list(current_path)
                     best_dist = current_dist
