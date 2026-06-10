@@ -5,3 +5,4 @@ numpy==2.4.6
 requests==2.34.2
 polyline==2.0.4
 pygad==3.6.0
+lkh

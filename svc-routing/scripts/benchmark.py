@@ -18,11 +18,11 @@ def get_jwt_token():
     response.raise_for_status()
     return response.json()["access_token"]
 
-ALGORITHMS = ["nearest_neighbor", "genetic", "ant_colony", "simulated_annealing"]
+ALGORITHMS = ["nearest_neighbor", "genetic", "ant_colony", "simulated_annealing", "lkh"]
 
-PROBLEM_SIZES = [10, 20, 30, 40] 
+PROBLEM_SIZES = [10, 20, 30, 40,50] 
 RUNS_PER_ALGO = 3 
-
+    
 def generate_random_points(num_points):
     points = []
     for i in range(num_points):
